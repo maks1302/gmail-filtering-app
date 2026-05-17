@@ -34,7 +34,6 @@
                 font-size: 14px;
             }
 
-            /* ---- LAYOUT ---- */
             .shell {
                 display: flex;
                 min-height: 100vh;
@@ -62,7 +61,6 @@
                 max-width: 900px;
             }
 
-            /* ---- MOBILE ---- */
             @media (max-width: 700px) {
                 .sidebar {
                     transform: translateX(-100%);
@@ -81,20 +79,11 @@
                 .form-grid {
                     grid-template-columns: 1fr;
                 }
-                .log-entry {
-                    grid-template-columns: 1fr;
-                    gap: 4px;
-                }
-                .log-time-action {
-                    display: flex;
-                    gap: 10px;
-                    align-items: center;
+                .form-full {
+                    grid-column: 1;
                 }
                 .hamburger {
                     display: flex !important;
-                }
-                .modal {
-                    width: calc(100vw - 24px);
                 }
                 .topbar {
                     display: flex !important;
@@ -102,9 +91,15 @@
                 .condition-row {
                     flex-wrap: wrap;
                 }
+                .rule-actions {
+                    flex-wrap: wrap;
+                }
+                .log-entry-header {
+                    grid-template-columns: 1fr;
+                    gap: 3px;
+                }
             }
 
-            /* ---- TOPBAR (mobile only) ---- */
             .topbar {
                 display: none;
                 position: fixed;
@@ -140,7 +135,6 @@
                 background: var(--text);
                 border-radius: 2px;
             }
-
             .sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -151,15 +145,12 @@
             .sidebar-overlay.open {
                 display: block;
             }
-
-            /* add top padding on mobile for fixed topbar */
             @media (max-width: 700px) {
                 body {
                     padding-top: 52px;
                 }
             }
 
-            /* ---- SIDEBAR ---- */
             .logo {
                 display: flex;
                 align-items: center;
@@ -240,7 +231,6 @@
                 background: currentColor;
             }
 
-            /* ---- PAGE ---- */
             .page {
                 display: none;
             }
@@ -248,7 +238,6 @@
                 display: block;
             }
 
-            /* ---- STATS ---- */
             .stats-row {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -275,7 +264,6 @@
                 letter-spacing: -0.5px;
             }
 
-            /* ---- CARD ---- */
             .card {
                 background: var(--bg2);
                 border: 1px solid var(--border);
@@ -292,7 +280,6 @@
                 margin-bottom: 18px;
             }
 
-            /* ---- FORM ---- */
             .form-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -307,7 +294,7 @@
                 flex-direction: column;
                 gap: 5px;
             }
-            label.field-label {
+            .field-label {
                 font-size: 11px;
                 color: var(--muted);
                 font-weight: 600;
@@ -337,15 +324,30 @@
             select option {
                 background: var(--bg2);
             }
+            input.warn-border {
+                border-color: var(--warning) !important;
+            }
 
-            /* ---- CONDITIONS ---- */
+            .warn-box {
+                background: rgba(251, 191, 36, 0.08);
+                border: 1px solid rgba(251, 191, 36, 0.3);
+                border-radius: 7px;
+                padding: 8px 12px;
+                font-size: 12px;
+                color: var(--warning);
+                margin-top: 6px;
+                display: none;
+            }
+            .warn-box.show {
+                display: block;
+            }
+
             .conditions-list {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
                 margin-bottom: 10px;
             }
-
             .condition-row {
                 display: flex;
                 align-items: center;
@@ -354,7 +356,6 @@
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 padding: 10px 12px;
-                position: relative;
             }
             .condition-row select {
                 flex: 1;
@@ -362,7 +363,7 @@
             }
             .condition-row input {
                 flex: 2;
-                min-width: 120px;
+                min-width: 100px;
             }
             .condition-badge {
                 font-size: 10px;
@@ -382,13 +383,12 @@
                 background: rgba(251, 191, 36, 0.15);
                 color: var(--warning);
             }
-
             .condition-remove {
                 background: none;
                 border: none;
                 color: var(--muted);
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 18px;
                 padding: 0 2px;
                 flex-shrink: 0;
                 line-height: 1;
@@ -404,6 +404,7 @@
                 margin-bottom: 10px;
                 font-size: 12px;
                 color: var(--muted);
+                flex-wrap: wrap;
             }
             .logic-btn {
                 padding: 4px 12px;
@@ -426,7 +427,6 @@
                 color: var(--warning);
                 background: rgba(251, 191, 36, 0.1);
             }
-
             .add-condition-btn {
                 display: inline-flex;
                 align-items: center;
@@ -445,7 +445,6 @@
                 background: rgba(79, 124, 255, 0.15);
             }
 
-            /* ---- SCOPE CHIPS ---- */
             .scope-group {
                 display: flex;
                 flex-wrap: wrap;
@@ -480,7 +479,6 @@
                 background: rgba(255, 79, 106, 0.1);
             }
 
-            /* ---- TIMER ---- */
             .timer-row {
                 display: flex;
                 flex-wrap: wrap;
@@ -507,7 +505,6 @@
                 background: rgba(79, 124, 255, 0.1);
             }
 
-            /* ---- BUTTONS ---- */
             .btn {
                 display: inline-flex;
                 align-items: center;
@@ -557,13 +554,17 @@
             .btn-stop:hover {
                 background: rgba(251, 191, 36, 0.1);
             }
+            .btn-debug {
+                background: transparent;
+                color: #a98cff;
+                border: 1px solid rgba(124, 92, 252, 0.3);
+            }
+            .btn-debug:hover {
+                background: rgba(124, 92, 252, 0.1);
+            }
             .btn-sm {
                 padding: 5px 10px;
                 font-size: 12px;
-            }
-            .btn-xs {
-                padding: 3px 8px;
-                font-size: 11px;
             }
             .btn:disabled {
                 opacity: 0.4;
@@ -575,7 +576,6 @@
                 flex-wrap: wrap;
             }
 
-            /* ---- SECTION HEADER ---- */
             .section-header {
                 display: flex;
                 align-items: flex-start;
@@ -592,15 +592,14 @@
                 font-size: 12px;
                 color: var(--muted);
                 line-height: 1.5;
+                margin-top: 3px;
             }
 
-            /* ---- RULE CARDS ---- */
             .rules-list {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
-
             .rule-card {
                 background: var(--bg2);
                 border: 1px solid var(--border);
@@ -614,7 +613,6 @@
             .rule-card.disabled {
                 opacity: 0.4;
             }
-
             .rule-card-header {
                 display: flex;
                 align-items: flex-start;
@@ -650,7 +648,6 @@
             .rule-toggle:checked::after {
                 transform: translateX(14px);
             }
-
             .rule-body {
                 flex: 1;
                 min-width: 0;
@@ -676,6 +673,37 @@
                 display: flex;
                 flex-wrap: wrap;
                 gap: 5px;
+            }
+            .rule-actions {
+                display: flex;
+                gap: 5px;
+                flex-shrink: 0;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            .order-btns {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .order-btn {
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 11px;
+                padding: 2px 6px;
+                line-height: 1.4;
+                transition: all 0.15s;
+            }
+            .order-btn:hover {
+                background: var(--border2);
+                color: var(--text);
+            }
+            .order-btn:disabled {
+                opacity: 0.25;
+                cursor: not-allowed;
             }
 
             .pill {
@@ -742,39 +770,6 @@
                 color: var(--warning);
             }
 
-            .rule-actions {
-                display: flex;
-                gap: 5px;
-                flex-shrink: 0;
-                flex-wrap: wrap;
-                align-items: flex-start;
-            }
-            .order-btns {
-                display: flex;
-                flex-direction: column;
-                gap: 3px;
-            }
-            .order-btn {
-                background: var(--bg3);
-                border: 1px solid var(--border);
-                border-radius: 5px;
-                color: var(--muted);
-                cursor: pointer;
-                font-size: 11px;
-                padding: 2px 6px;
-                line-height: 1.4;
-                transition: all 0.15s;
-            }
-            .order-btn:hover {
-                background: var(--border2);
-                color: var(--text);
-            }
-            .order-btn:disabled {
-                opacity: 0.25;
-                cursor: not-allowed;
-            }
-
-            /* ---- EMPTY ---- */
             .empty {
                 text-align: center;
                 padding: 48px 24px;
@@ -785,7 +780,6 @@
                 margin-bottom: 10px;
             }
 
-            /* ---- TEST RESULT ---- */
             .test-result {
                 margin-top: 14px;
                 display: none;
@@ -809,22 +803,16 @@
                 color: var(--muted);
                 margin-bottom: 6px;
             }
-            .test-cond-row {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                margin-top: 4px;
-                font-size: 11px;
-            }
             .cond-check {
-                width: 14px;
-                height: 14px;
+                width: 16px;
+                height: 16px;
                 border-radius: 3px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 9px;
+                font-size: 10px;
                 flex-shrink: 0;
+                font-weight: 700;
             }
             .cond-check.pass {
                 background: rgba(52, 211, 153, 0.2);
@@ -834,8 +822,70 @@
                 background: rgba(255, 79, 106, 0.2);
                 color: var(--danger);
             }
+            .test-cond-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 4px;
+                font-size: 11px;
+                flex-wrap: wrap;
+            }
+            .actual-val {
+                color: var(--muted);
+                font-family: monospace;
+                font-size: 10px;
+                margin-top: 2px;
+                margin-left: 22px;
+                word-break: break-all;
+            }
 
-            /* ---- LOG ---- */
+            /* debug panel */
+            .debug-panel {
+                margin-top: 12px;
+                background: var(--bg3);
+                border: 1px solid rgba(124, 92, 252, 0.3);
+                border-radius: 8px;
+                overflow: hidden;
+                display: none;
+            }
+            .debug-panel.open {
+                display: block;
+            }
+            .debug-header {
+                padding: 10px 14px;
+                background: rgba(124, 92, 252, 0.08);
+                font-size: 12px;
+                font-weight: 600;
+                color: #a98cff;
+                border-bottom: 1px solid rgba(124, 92, 252, 0.2);
+            }
+            .debug-msg {
+                padding: 10px 14px;
+                border-bottom: 1px solid var(--border);
+                font-size: 12px;
+            }
+            .debug-msg:last-child {
+                border-bottom: none;
+            }
+            .debug-msg-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 6px;
+                flex-wrap: wrap;
+            }
+            .debug-pass {
+                color: var(--success);
+                font-weight: 600;
+                font-size: 11px;
+            }
+            .debug-fail {
+                color: var(--danger);
+                font-weight: 600;
+                font-size: 11px;
+            }
+
+            /* log */
             .log-list {
                 display: flex;
                 flex-direction: column;
@@ -855,7 +905,7 @@
             .log-entry-header {
                 padding: 11px 15px;
                 display: grid;
-                grid-template-columns: 120px 80px 1fr;
+                grid-template-columns: 110px 80px 1fr;
                 gap: 10px;
                 align-items: center;
                 font-size: 13px;
@@ -883,10 +933,13 @@
             .log-expand.open {
                 display: block;
             }
-            .log-expand-section {
+            .log-section {
                 margin-bottom: 10px;
             }
-            .log-expand-label {
+            .log-section:last-child {
+                margin-bottom: 0;
+            }
+            .log-section-label {
                 font-size: 10px;
                 color: var(--muted);
                 font-weight: 600;
@@ -904,15 +957,17 @@
                 padding: 8px 10px;
                 border-radius: 6px;
                 border: 1px solid var(--border);
+                white-space: pre-wrap;
             }
             .log-cond {
                 display: flex;
                 align-items: center;
                 gap: 7px;
                 margin-bottom: 4px;
+                font-size: 11px;
+                flex-wrap: wrap;
             }
 
-            /* ---- TOAST ---- */
             .toast {
                 position: fixed;
                 bottom: 24px;
@@ -952,7 +1007,6 @@
                 color: var(--warning);
             }
 
-            /* ---- SPINNER ---- */
             .spin {
                 display: inline-block;
                 width: 13px;
@@ -968,7 +1022,6 @@
                 }
             }
 
-            /* ---- MODAL ---- */
             .modal-overlay {
                 display: none;
                 position: fixed;
@@ -1022,7 +1075,6 @@
                 flex-wrap: wrap;
             }
 
-            /* ---- GUIDE ---- */
             .guide-table {
                 width: 100%;
                 border-collapse: collapse;
@@ -1059,15 +1111,12 @@
         </style>
     </head>
     <body>
-        <!-- Mobile topbar -->
         <div class="topbar" id="topbar">
             <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
                 <span></span><span></span><span></span>
             </button>
             <span class="topbar-title">✉️ GmailFilter</span>
         </div>
-
-        <!-- Sidebar overlay -->
         <div
             class="sidebar-overlay"
             id="sidebar-overlay"
@@ -1075,13 +1124,12 @@
         ></div>
 
         <div class="shell">
-            <!-- Sidebar -->
             <aside class="sidebar" id="sidebar">
                 <div class="logo">
                     <div class="logo-icon">✉️</div>
                     <div>
                         <div class="logo-text">GmailFilter</div>
-                        <div class="logo-sub">Apps Script v4</div>
+                        <div class="logo-sub">v5</div>
                     </div>
                 </div>
                 <div
@@ -1126,7 +1174,7 @@
             </aside>
 
             <main class="main">
-                <!-- ======= RULES PAGE ======= -->
+                <!-- RULES PAGE -->
                 <div class="page active" id="page-rules">
                     <div class="stats-row">
                         <div class="stat-card">
@@ -1134,7 +1182,7 @@
                             <div class="stat-value" id="stat-total">—</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Active Rules</div>
+                            <div class="stat-label">Active</div>
                             <div class="stat-value" id="stat-active">—</div>
                         </div>
                         <div class="stat-card">
@@ -1143,7 +1191,6 @@
                         </div>
                     </div>
 
-                    <!-- Add rule form -->
                     <div class="card">
                         <div class="card-title">Add New Rule</div>
                         <div class="form-grid">
@@ -1262,8 +1309,7 @@
                             </div>
                         </div>
 
-                        <!-- Conditions -->
-                        <div style="margin-bottom: 10px">
+                        <div style="margin-bottom: 14px">
                             <div
                                 style="
                                     display: flex;
@@ -1292,12 +1338,9 @@
                                         OR
                                     </button>
                                     <span
-                                        style="
-                                            color: var(--muted);
-                                            font-size: 11px;
-                                        "
+                                        style="font-size: 11px"
                                         id="r-logic-hint"
-                                        >all conditions must match</span
+                                        >all must match</span
                                     >
                                 </div>
                             </div>
@@ -1313,7 +1356,7 @@
                             </button>
                         </div>
 
-                        <div class="action-strip" style="margin-top: 14px">
+                        <div class="action-strip">
                             <button class="btn btn-primary" onclick="addRule()">
                                 ＋ Add Rule
                             </button>
@@ -1337,34 +1380,25 @@
                     <div class="section-header">
                         <div>
                             <div class="section-title">Your Rules</div>
-                            <div class="section-note" style="margin-top: 4px">
-                                ⚠️ Rule order matters — filters run
-                                top-to-bottom. Use ↑↓ to reorder.
+                            <div class="section-note">
+                                ⚠️ Rules run top-to-bottom — order matters. Use
+                                ↑↓ to reorder.<br />🐛 Use the Debug button to
+                                see exactly why a rule matches or doesn't.
                             </div>
                         </div>
                     </div>
                     <div class="rules-list" id="rules-list">
                         <div class="empty">
                             <div class="empty-icon">⚡</div>
-                            <p>No rules yet — add one above</p>
+                            <p>No rules yet</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- ======= SETTINGS PAGE ======= -->
+                <!-- SETTINGS PAGE -->
                 <div class="page" id="page-settings">
                     <div class="card">
                         <div class="card-title">Auto-run Timer</div>
-                        <p
-                            style="
-                                color: var(--muted);
-                                font-size: 13px;
-                                margin-bottom: 16px;
-                            "
-                        >
-                            How often the filter script runs. Changes take
-                            effect immediately.
-                        </p>
                         <div class="timer-row">
                             <button
                                 class="timer-btn"
@@ -1448,25 +1482,13 @@
                             Needs
                             <strong style="color: var(--text)"
                                 >Gmail Advanced Service</strong
-                            >
-                            enabled:<br />
-                            1. Apps Script editor →
-                            <strong style="color: var(--text)">Services</strong>
-                            (＋ icon)<br />
-                            2. Find
-                            <strong style="color: var(--text)"
-                                >Gmail API</strong
-                            >
-                            → click
-                            <strong style="color: var(--text)">Add</strong
-                            ><br />
-                            Without it the action falls back to Trash and logs
-                            the real error.
+                            >:<br />
+                            Apps Script editor → Services (＋) → Gmail API → Add
                         </p>
                     </div>
                 </div>
 
-                <!-- ======= LOG PAGE ======= -->
+                <!-- LOG PAGE -->
                 <div class="page" id="page-log">
                     <div class="section-header">
                         <span class="section-title"
@@ -1477,14 +1499,14 @@
                                     color: var(--muted);
                                     font-weight: 400;
                                 "
-                                >(last 100 · click to expand)</span
+                                >(last 50 · click to expand)</span
                             ></span
                         >
                         <button
                             class="btn btn-ghost btn-sm"
                             onclick="clearLog()"
                         >
-                            Clear Log
+                            Clear
                         </button>
                     </div>
                     <div class="log-list" id="log-list">
@@ -1495,8 +1517,116 @@
                     </div>
                 </div>
 
-                <!-- ======= GUIDE PAGE ======= -->
+                <!-- GUIDE PAGE -->
                 <div class="page" id="page-guide">
+                    <div class="card">
+                        <div class="card-title">⚠️ Common Pattern Mistakes</div>
+                        <div
+                            style="
+                                display: flex;
+                                flex-direction: column;
+                                gap: 12px;
+                                font-size: 13px;
+                            "
+                        >
+                            <div
+                                style="
+                                    background: rgba(255, 79, 106, 0.06);
+                                    border: 1px solid rgba(255, 79, 106, 0.2);
+                                    border-radius: 8px;
+                                    padding: 14px;
+                                "
+                            >
+                                <div
+                                    style="
+                                        color: var(--danger);
+                                        font-weight: 600;
+                                        margin-bottom: 6px;
+                                    "
+                                >
+                                    🐛 Unescaped dot in email addresses
+                                </div>
+                                <div style="color: var(--muted)">
+                                    The <span class="mono">.</span> in regex
+                                    means <em>any character</em>, not a literal
+                                    dot.
+                                </div>
+                                <div
+                                    style="
+                                        margin-top: 8px;
+                                        display: flex;
+                                        gap: 12px;
+                                        flex-wrap: wrap;
+                                    "
+                                >
+                                    <div>
+                                        <div
+                                            style="
+                                                color: var(--danger);
+                                                font-size: 11px;
+                                                margin-bottom: 3px;
+                                            "
+                                        >
+                                            ❌ Wrong
+                                        </div>
+                                        <span class="mono"
+                                            >canopy.ua@gmail.com</span
+                                        >
+                                    </div>
+                                    <div>
+                                        <div
+                                            style="
+                                                color: var(--success);
+                                                font-size: 11px;
+                                                margin-bottom: 3px;
+                                            "
+                                        >
+                                            ✓ Correct
+                                        </div>
+                                        <span class="mono"
+                                            >canopy\.ua@gmail\.com</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 79, 106, 0.06);
+                                    border: 1px solid rgba(255, 79, 106, 0.2);
+                                    border-radius: 8px;
+                                    padding: 14px;
+                                "
+                            >
+                                <div
+                                    style="
+                                        color: var(--danger);
+                                        font-weight: 600;
+                                        margin-bottom: 6px;
+                                    "
+                                >
+                                    🐛 Body matching old quoted text
+                                </div>
+                                <div style="color: var(--muted)">
+                                    When you reply to an email, Gmail includes
+                                    the original message in the body. A body
+                                    rule for "let me in" will match any reply
+                                    thread that previously contained those
+                                    words, even from a different sender.
+                                </div>
+                                <div
+                                    style="
+                                        margin-top: 8px;
+                                        color: var(--success);
+                                        font-size: 12px;
+                                    "
+                                >
+                                    ✓ Always combine body rules with a
+                                    <strong>from</strong> condition using AND
+                                    logic.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="card">
                         <div class="card-title">Regex Quick Reference</div>
                         <table class="guide-table">
@@ -1534,13 +1664,6 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="mono">noreply@.*\.com</td>
-                                <td>Any noreply address</td>
-                                <td style="color: var(--muted)">
-                                    Wildcard with .*
-                                </td>
-                            </tr>
-                            <tr>
                                 <td class="mono">^hello</td>
                                 <td>Starts with</td>
                                 <td style="color: var(--muted)">
@@ -1554,122 +1677,13 @@
                                     Field ends with "hello"
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="mono">[\u0400-\u04FF]</td>
-                                <td>Cyrillic script</td>
-                                <td style="color: var(--muted)">
-                                    Catches Cyrillic spam
-                                </td>
-                            </tr>
                         </table>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">Multi-condition Examples</div>
-                        <div
-                            style="
-                                font-size: 13px;
-                                color: var(--muted);
-                                line-height: 1.8;
-                            "
-                        >
-                            <p style="margin-bottom: 12px">
-                                <strong style="color: var(--text)"
-                                    >AND logic</strong
-                                >
-                                — all conditions must match (more precise, fewer
-                                false positives)
-                            </p>
-                            <div
-                                style="
-                                    background: var(--bg3);
-                                    border: 1px solid var(--border);
-                                    border-radius: 8px;
-                                    padding: 12px;
-                                    margin-bottom: 14px;
-                                    font-size: 12px;
-                                "
-                            >
-                                <div
-                                    style="
-                                        color: var(--text);
-                                        margin-bottom: 6px;
-                                    "
-                                >
-                                    Block only marketing emails from a specific
-                                    company:
-                                </div>
-                                <div>
-                                    📧 <span class="mono">from</span> matches
-                                    <span class="mono">@acme\.com</span>
-                                </div>
-                                <div>
-                                    📝 <span class="mono">subject</span> matches
-                                    <span class="mono"
-                                        >\b(sale|promo|offer)\b</span
-                                    >
-                                </div>
-                                <div
-                                    style="
-                                        margin-top: 6px;
-                                        color: var(--success);
-                                        font-size: 11px;
-                                    "
-                                >
-                                    ✓ Will NOT trash regular emails from
-                                    @acme.com — only promotional ones
-                                </div>
-                            </div>
-                            <p style="margin-bottom: 12px">
-                                <strong style="color: var(--text)"
-                                    >OR logic</strong
-                                >
-                                — any condition triggers (broader, catches more)
-                            </p>
-                            <div
-                                style="
-                                    background: var(--bg3);
-                                    border: 1px solid var(--border);
-                                    border-radius: 8px;
-                                    padding: 12px;
-                                    font-size: 12px;
-                                "
-                            >
-                                <div
-                                    style="
-                                        color: var(--text);
-                                        margin-bottom: 6px;
-                                    "
-                                >
-                                    Label anything GitHub-related:
-                                </div>
-                                <div>
-                                    📧 <span class="mono">from</span> matches
-                                    <span class="mono">@github\.com</span>
-                                </div>
-                                <div>
-                                    📝 <span class="mono">subject</span> matches
-                                    <span class="mono"
-                                        >github|pull request|CI</span
-                                    >
-                                </div>
-                                <div
-                                    style="
-                                        margin-top: 6px;
-                                        color: var(--success);
-                                        font-size: 11px;
-                                    "
-                                >
-                                    ✓ Catches GitHub emails even if forwarded
-                                    from another address
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </main>
         </div>
 
-        <!-- ======= EDIT MODAL ======= -->
+        <!-- EDIT MODAL -->
         <div class="modal-overlay" id="edit-modal">
             <div class="modal">
                 <div class="modal-title">
@@ -1681,11 +1695,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="field-label">Rule Name</label>
-                        <input
-                            type="text"
-                            id="e-name"
-                            placeholder="e.g. Block promo emails"
-                        />
+                        <input type="text" id="e-name" />
                     </div>
                     <div class="form-group">
                         <label class="field-label">Action</label>
@@ -1715,11 +1725,7 @@
                         style="display: none"
                     >
                         <label class="field-label">Label Name</label>
-                        <input
-                            type="text"
-                            id="e-label"
-                            placeholder="e.g. Newsletters"
-                        />
+                        <input type="text" id="e-label" />
                     </div>
                     <div class="form-group form-full">
                         <label class="field-label">Scan Scope</label>
@@ -1797,10 +1803,8 @@
                             >
                                 OR
                             </button>
-                            <span
-                                style="color: var(--muted); font-size: 11px"
-                                id="e-logic-hint"
-                                >all conditions must match</span
+                            <span style="font-size: 11px" id="e-logic-hint"
+                                >all must match</span
                             >
                         </div>
                     </div>
@@ -1844,7 +1848,7 @@
             var editingRuleId = null;
             var logicState = { r: "AND", e: "AND" };
 
-            // ---- mobile sidebar ----
+            // ---- mobile ----
             function toggleSidebar() {
                 document.getElementById("sidebar").classList.toggle("open");
                 document
@@ -1880,27 +1884,36 @@
                 clearTimeout(el._t);
                 el._t = setTimeout(function () {
                     el.classList.remove("show");
-                }, 3200);
+                }, 3500);
             }
 
-            // ---- logic toggle ----
+            // ---- regex dot warning ----
+            function checkDotWarning(input, warnId) {
+                var val = input.value;
+                // warn if pattern looks like email/domain with unescaped dots
+                var hasEmail = val.indexOf("@") !== -1;
+                var hasUnescapedDot = /(?<!\\)\./.test(val);
+                var el = document.getElementById(warnId);
+                if (el && hasEmail && hasUnescapedDot) {
+                    el.classList.add("show");
+                } else if (el) {
+                    el.classList.remove("show");
+                }
+            }
+
+            // ---- logic ----
             function setLogic(prefix, val) {
                 logicState[prefix] = val;
-                var andBtn = document.getElementById(prefix + "-logic-and");
-                var orBtn = document.getElementById(prefix + "-logic-or");
-                var hint = document.getElementById(prefix + "-logic-hint");
-                andBtn.className =
+                document.getElementById(prefix + "-logic-and").className =
                     "logic-btn" + (val === "AND" ? " active-and" : "");
-                orBtn.className =
+                document.getElementById(prefix + "-logic-or").className =
                     "logic-btn" + (val === "OR" ? " active-or" : "");
-                hint.textContent =
-                    val === "AND"
-                        ? "all conditions must match"
-                        : "any condition triggers";
-                renderConditionBadges(prefix);
+                document.getElementById(prefix + "-logic-hint").textContent =
+                    val === "AND" ? "all must match" : "any triggers";
+                reindexConditions(prefix);
             }
 
-            // ---- condition rows ----
+            // ---- conditions ----
             function conditionRowHTML(prefix, idx, cond) {
                 var badgeClass =
                     logicState[prefix] === "OR" ? "badge-or" : "badge-and";
@@ -1930,8 +1943,8 @@
                     .join("");
 
                 var flagOpts = [
-                    { v: "i", l: "insensitive" },
-                    { v: "", l: "sensitive" },
+                    { v: "i", l: "case off" },
+                    { v: "", l: "case on" },
                     { v: "im", l: "multiline" },
                 ]
                     .map(function (o) {
@@ -1947,18 +1960,28 @@
                     })
                     .join("");
 
+                var warnId = prefix + "-warn-" + idx;
+                var pattern = esc(cond ? cond.pattern : "");
+
                 return (
                     '<div class="condition-row" data-idx="' +
                     idx +
                     '">' +
                     badge +
-                    '<select onchange="void(0)" class="cond-field" style="max-width:110px;">' +
+                    '<select class="cond-field" style="max-width:100px;">' +
                     fieldOpts +
                     "</select>" +
-                    '<input type="text" class="cond-pattern" placeholder="pattern (regex)" value="' +
-                    esc(cond ? cond.pattern : "") +
-                    '">' +
-                    '<select class="cond-flags" style="max-width:100px;">' +
+                    '<div style="flex:2;min-width:100px;display:flex;flex-direction:column;gap:4px;">' +
+                    '<input type="text" class="cond-pattern" placeholder="pattern" value="' +
+                    pattern +
+                    '" oninput="checkDotWarning(this,\'' +
+                    warnId +
+                    "')\">" +
+                    '<div class="warn-box" id="' +
+                    warnId +
+                    '">⚠️ Unescaped dot detected — use <strong>\\.</strong> for a literal dot in email addresses (e.g. <strong>canopy\\.ua@gmail\\.com</strong>)</div>' +
+                    "</div>" +
+                    '<select class="cond-flags" style="max-width:90px;">' +
                     flagOpts +
                     "</select>" +
                     '<button class="condition-remove" onclick="removeConditionRow(this,\'' +
@@ -1984,6 +2007,11 @@
                 var div = document.createElement("div");
                 div.innerHTML = conditionRowHTML(prefix, idx, cond || null);
                 list.appendChild(div.firstChild);
+                // check warning on existing value
+                var newRow = list.lastElementChild;
+                var inp = newRow.querySelector(".cond-pattern");
+                var warnId = prefix + "-warn-" + idx;
+                if (inp) checkDotWarning(inp, warnId);
             }
 
             function removeConditionRow(btn, prefix) {
@@ -1998,50 +2026,47 @@
 
             function reindexConditions(prefix) {
                 var list = document.getElementById(prefix + "-conditions-list");
-                var rows = list.querySelectorAll(".condition-row");
-                rows.forEach(function (row, i) {
-                    row.dataset.idx = i;
-                    var badge = row.querySelector(".condition-badge");
-                    if (i === 0) {
-                        if (badge) badge.remove();
-                    } else {
+                list.querySelectorAll(".condition-row").forEach(
+                    function (row, i) {
+                        row.dataset.idx = i;
+                        var badge = row.querySelector(".condition-badge");
                         var badgeClass =
                             logicState[prefix] === "OR"
                                 ? "badge-or"
                                 : "badge-and";
                         var badgeText =
                             logicState[prefix] === "OR" ? "OR" : "AND";
-                        if (badge) {
-                            badge.className = "condition-badge " + badgeClass;
-                            badge.textContent = badgeText;
+                        if (i === 0) {
+                            if (badge) badge.remove();
                         } else {
-                            var b = document.createElement("span");
-                            b.className = "condition-badge " + badgeClass;
-                            b.textContent = badgeText;
-                            row.insertBefore(b, row.firstChild);
+                            if (badge) {
+                                badge.className =
+                                    "condition-badge " + badgeClass;
+                                badge.textContent = badgeText;
+                            } else {
+                                var b = document.createElement("span");
+                                b.className = "condition-badge " + badgeClass;
+                                b.textContent = badgeText;
+                                row.insertBefore(b, row.firstChild);
+                            }
                         }
-                    }
-                });
-            }
-
-            function renderConditionBadges(prefix) {
-                reindexConditions(prefix);
+                    },
+                );
             }
 
             function getConditions(prefix) {
-                var list = document.getElementById(prefix + "-conditions-list");
-                var rows = list.querySelectorAll(".condition-row");
-                var conds = [];
-                rows.forEach(function (row) {
-                    conds.push({
+                var rows = document
+                    .getElementById(prefix + "-conditions-list")
+                    .querySelectorAll(".condition-row");
+                return Array.from(rows).map(function (row) {
+                    return {
                         field: row.querySelector(".cond-field").value,
                         pattern: row
                             .querySelector(".cond-pattern")
                             .value.trim(),
                         flags: row.querySelector(".cond-flags").value,
-                    });
+                    };
                 });
-                return conds;
             }
 
             function validateConditions(conds) {
@@ -2062,7 +2087,7 @@
                 return null;
             }
 
-            // ---- scope chips ----
+            // ---- scope ----
             function syncChip(cb, groupId) {
                 var chip = cb.closest(".scope-chip");
                 if (cb.checked) chip.classList.add("checked");
@@ -2081,7 +2106,6 @@
                     }
                 }
             }
-
             function handleAnywhere(cb, groupId) {
                 document
                     .getElementById(groupId)
@@ -2102,7 +2126,6 @@
                     }
                 }
             }
-
             function getScope(groupId) {
                 var vals = Array.from(
                     document.querySelectorAll("#" + groupId + " input:checked"),
@@ -2112,7 +2135,6 @@
                 if (vals.indexOf("anywhere") !== -1) return ["anywhere"];
                 return vals.length ? vals : ["inbox"];
             }
-
             function setScopeChips(groupId, scope) {
                 document
                     .getElementById(groupId)
@@ -2128,7 +2150,6 @@
                     });
             }
 
-            // ---- label toggle ----
             function toggleLabel(lgId, selId) {
                 var a = document.getElementById(selId).value;
                 document.getElementById(lgId).style.display =
@@ -2174,7 +2195,7 @@
                     .getStats();
             }
 
-            // ---- load / render rules ----
+            // ---- rules ----
             function loadRules() {
                 google.script.run
                     .withSuccessHandler(function (data) {
@@ -2189,17 +2210,16 @@
                 if (scope.indexOf("anywhere") !== -1) return "everywhere";
                 return scope.join("+");
             }
-
-            function actionClass(action) {
-                return action === "archive" || action === "label+archive"
+            function actionClass(a) {
+                return a === "archive" || a === "label+archive"
                     ? "archive"
-                    : action === "label" || action === "trash+label"
+                    : a === "label" || a === "trash+label"
                       ? "label"
-                      : action === "star"
+                      : a === "star"
                         ? "star"
-                        : action === "markread"
+                        : a === "markread"
                           ? "markread"
-                          : action === "delete"
+                          : a === "delete"
                             ? "delete"
                             : "";
             }
@@ -2208,7 +2228,7 @@
                 var el = document.getElementById("rules-list");
                 if (!rules.length) {
                     el.innerHTML =
-                        '<div class="empty"><div class="empty-icon">⚡</div><p>No rules yet — add one above</p></div>';
+                        '<div class="empty"><div class="empty-icon">⚡</div><p>No rules yet</p></div>';
                     return;
                 }
                 el.innerHTML = rules
@@ -2242,8 +2262,8 @@
                             .join("");
 
                         return [
-                            '<div class="rule-card ' +
-                                (disabled ? "disabled" : "") +
+                            '<div class="rule-card' +
+                                (disabled ? " disabled" : "") +
                                 '" id="rc-' +
                                 r.id +
                                 '">',
@@ -2283,20 +2303,29 @@
                                 r.id +
                                 "','up')\"   " +
                                 (idx === 0 ? "disabled" : "") +
-                                ' title="Move up">↑</button>',
+                                ">↑</button>",
                             '<button class="order-btn" onclick="moveRule(\'' +
                                 r.id +
                                 "','down')\" " +
                                 (idx === rules.length - 1 ? "disabled" : "") +
-                                ' title="Move down">↓</button>',
+                                ">↓</button>",
                             "</div>",
-                            '<button class="btn btn-ghost btn-sm" onclick="openEditModal(\'' +
+                            '<button class="btn btn-debug  btn-sm" onclick="debugRule(\'' +
+                                r.id +
+                                "')\">🐛</button>",
+                            '<button class="btn btn-ghost  btn-sm" onclick="openEditModal(\'' +
                                 r.id +
                                 "')\">✏️</button>",
                             '<button class="btn btn-danger btn-sm" onclick="deleteRule(\'' +
                                 r.id +
                                 "')\">✕</button>",
                             "</div>",
+                            "</div>",
+                            '<div class="debug-panel" id="dbg-' + r.id + '">',
+                            '<div class="debug-header">🐛 Debug — last 20 emails in scope vs this rule</div>',
+                            '<div id="dbg-content-' +
+                                r.id +
+                                '" style="padding:12px 14px;color:var(--muted);font-size:12px;"><span class="spin"></span> Scanning…</div>',
                             "</div>",
                             "</div>",
                         ].join("");
@@ -2310,6 +2339,101 @@
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;")
                     .replace(/"/g, "&quot;");
+            }
+
+            // ---- debug rule ----
+            function debugRule(id) {
+                var panel = document.getElementById("dbg-" + id);
+                if (panel.classList.contains("open")) {
+                    panel.classList.remove("open");
+                    return;
+                }
+                panel.classList.add("open");
+                var content = document.getElementById("dbg-content-" + id);
+                content.innerHTML = '<span class="spin"></span> Scanning…';
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (!res.ok) {
+                            content.innerHTML =
+                                '<span style="color:var(--danger)">Error: ' +
+                                esc(res.error) +
+                                "</span>";
+                            return;
+                        }
+                        if (!res.results || !res.results.length) {
+                            content.innerHTML =
+                                '<span style="color:var(--muted)">No emails found in scope.</span>';
+                            return;
+                        }
+
+                        var logic = (res.rule && res.rule.logic) || "AND";
+                        content.innerHTML = res.results
+                            .map(function (m) {
+                                var passClass = m.passed
+                                    ? "debug-pass"
+                                    : "debug-fail";
+                                var passText = m.passed
+                                    ? "✓ MATCH"
+                                    : "✗ NO MATCH";
+
+                                var condRows = (m.conditions || [])
+                                    .map(function (c) {
+                                        var cls = c.matched ? "pass" : "fail";
+                                        var sym = c.matched ? "✓" : "✗";
+                                        return (
+                                            '<div class="test-cond-row">' +
+                                            '<span class="cond-check ' +
+                                            cls +
+                                            '">' +
+                                            sym +
+                                            "</span>" +
+                                            '<span class="pill pill-field" style="font-size:10px;">' +
+                                            c.field +
+                                            "</span>" +
+                                            '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
+                                            esc(c.pattern) +
+                                            "</span>" +
+                                            "</div>" +
+                                            '<div class="actual-val">actual: ' +
+                                            esc(c.actualValue || "") +
+                                            "</div>"
+                                        );
+                                    })
+                                    .join("");
+
+                                var d = new Date(m.date);
+                                return (
+                                    '<div class="debug-msg">' +
+                                    '<div class="debug-msg-header">' +
+                                    '<span class="' +
+                                    passClass +
+                                    '">' +
+                                    passText +
+                                    "</span>" +
+                                    '<span style="font-weight:600;">' +
+                                    esc(m.from) +
+                                    "</span>" +
+                                    '<span style="color:var(--muted);font-size:11px;">' +
+                                    d.toLocaleDateString() +
+                                    "</span>" +
+                                    "</div>" +
+                                    '<div style="color:var(--muted);margin-bottom:6px;">' +
+                                    esc(m.subject) +
+                                    "</div>" +
+                                    condRows +
+                                    "</div>"
+                                );
+                            })
+                            .join("");
+                    })
+                    .withFailureHandler(function (e) {
+                        content.innerHTML =
+                            '<span style="color:var(--danger)">Error: ' +
+                            esc(e.message) +
+                            "</span>";
+                    })
+                    .debugRule(id);
             }
 
             // ---- add rule ----
@@ -2373,8 +2497,9 @@
                 google.script.run
                     .withSuccessHandler(function (ok) {
                         if (!ok) return;
-                        var idx = rules.findIndex(function (r) {
-                            return r.id === id;
+                        var idx = -1;
+                        rules.forEach(function (r, i) {
+                            if (r.id === id) idx = i;
                         });
                         var newIdx = dir === "up" ? idx - 1 : idx + 1;
                         if (newIdx < 0 || newIdx >= rules.length) return;
@@ -2386,6 +2511,33 @@
                     .moveRule(id, dir);
             }
 
+            // ---- delete / toggle ----
+            function deleteRule(id) {
+                if (!confirm("Delete this rule?")) return;
+                google.script.run
+                    .withSuccessHandler(function () {
+                        rules = rules.filter(function (r) {
+                            return r.id !== id;
+                        });
+                        renderRules();
+                        loadStats();
+                        toast("Rule deleted", "info");
+                    })
+                    .deleteRule(id);
+            }
+            function toggleRule(id) {
+                google.script.run
+                    .withSuccessHandler(function () {
+                        rules = rules.map(function (r) {
+                            if (r.id === id) r.enabled = !r.enabled;
+                            return r;
+                        });
+                        renderRules();
+                        loadStats();
+                    })
+                    .toggleRule(id);
+            }
+
             // ---- edit modal ----
             function openEditModal(id) {
                 var rule = rules.find(function (r) {
@@ -2393,48 +2545,40 @@
                 });
                 if (!rule) return;
                 editingRuleId = id;
-
                 document.getElementById("e-name").value = rule.name || "";
                 document.getElementById("e-action").value =
                     rule.action || "trash";
                 document.getElementById("e-label").value = rule.label || "";
                 toggleLabel("e-label-group", "e-action");
                 setScopeChips("e-scope-group", rule.scope || ["inbox"]);
-
-                // set logic
                 logicState["e"] = rule.logic || "AND";
                 setLogic("e", logicState["e"]);
-
-                // populate conditions
                 var list = document.getElementById("e-conditions-list");
                 list.innerHTML = "";
                 (rule.conditions || []).forEach(function (c) {
                     addConditionRow("e", c);
                 });
                 if (!list.children.length) addConditionRow("e");
-
                 document
                     .getElementById("e-test-result")
                     .classList.remove("show");
                 document.getElementById("edit-modal").classList.add("open");
             }
-
             function closeEditModal() {
                 document.getElementById("edit-modal").classList.remove("open");
                 editingRuleId = null;
             }
+            document
+                .getElementById("edit-modal")
+                .addEventListener("click", function (e) {
+                    if (e.target === this) closeEditModal();
+                });
 
             function saveEdit() {
                 if (!editingRuleId) return;
                 var action = document.getElementById("e-action").value;
                 var label = document.getElementById("e-label").value.trim();
                 var conds = getConditions("e");
-                var logic = logicState["e"];
-
-                if (!conds.length) {
-                    toast("Add at least one condition", "error");
-                    return;
-                }
                 var err = validateConditions(conds);
                 if (err) {
                     toast(err, "error");
@@ -2456,12 +2600,11 @@
                         document.getElementById("e-name").value.trim() ||
                         conds[0].pattern,
                     conditions: conds,
-                    logic: logic,
+                    logic: logicState["e"],
                     action: action,
                     label: label,
                     scope: getScope("e-scope-group"),
                 };
-
                 google.script.run
                     .withSuccessHandler(function () {
                         rules = rules.map(function (r) {
@@ -2480,47 +2623,12 @@
                     .updateRule(updated);
             }
 
-            document
-                .getElementById("edit-modal")
-                .addEventListener("click", function (e) {
-                    if (e.target === this) closeEditModal();
-                });
-
-            // ---- delete / toggle ----
-            function deleteRule(id) {
-                if (!confirm("Delete this rule?")) return;
-                google.script.run
-                    .withSuccessHandler(function () {
-                        rules = rules.filter(function (r) {
-                            return r.id !== id;
-                        });
-                        renderRules();
-                        loadStats();
-                        toast("Rule deleted", "info");
-                    })
-                    .deleteRule(id);
-            }
-
-            function toggleRule(id) {
-                google.script.run
-                    .withSuccessHandler(function () {
-                        rules = rules.map(function (r) {
-                            if (r.id === id) r.enabled = !r.enabled;
-                            return r;
-                        });
-                        renderRules();
-                        loadStats();
-                    })
-                    .toggleRule(id);
-            }
-
-            // ---- test rule ----
+            // ---- test ----
             function testRuleForm(prefix, resultId) {
                 var conds = getConditions(prefix);
                 var logic = logicState[prefix];
                 var scope = getScope(prefix + "-scope-group");
                 var resEl = document.getElementById(resultId);
-
                 if (!conds.length) {
                     toast("Add at least one condition", "error");
                     return;
@@ -2531,8 +2639,7 @@
                     return;
                 }
 
-                resEl.innerHTML =
-                    '<span class="spin"></span> Testing across selected scopes…';
+                resEl.innerHTML = '<span class="spin"></span> Testing…';
                 resEl.classList.add("show");
 
                 google.script.run
@@ -2561,17 +2668,28 @@
                                             var cls = c.matched
                                                 ? "pass"
                                                 : "fail";
-                                            var sym = c.matched ? "✓" : "✗";
                                             return (
                                                 '<div class="test-cond-row"><span class="cond-check ' +
                                                 cls +
                                                 '">' +
-                                                sym +
-                                                '</span><span class="pill pill-field" style="font-size:10px;">' +
+                                                (c.matched ? "✓" : "✗") +
+                                                "</span>" +
+                                                '<span class="pill pill-field" style="font-size:10px;">' +
                                                 c.field +
-                                                '</span><span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
+                                                "</span>" +
+                                                '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                                 esc(c.pattern) +
-                                                "</span></div>"
+                                                "</span></div>" +
+                                                (c.actualValue
+                                                    ? '<div class="actual-val">actual: ' +
+                                                      esc(
+                                                          c.actualValue.substring(
+                                                              0,
+                                                              80,
+                                                          ),
+                                                      ) +
+                                                      "</div>"
+                                                    : "")
                                             );
                                         })
                                         .join("");
@@ -2579,9 +2697,11 @@
                                     return (
                                         '<div class="test-match"><div class="test-match-from">' +
                                         esc(m.from) +
-                                        '</div><div class="test-match-subject">' +
+                                        "</div>" +
+                                        '<div class="test-match-subject">' +
                                         esc(m.subject) +
-                                        '</div><div style="color:var(--muted);font-size:10px;margin-bottom:4px;">' +
+                                        "</div>" +
+                                        '<div style="color:var(--muted);font-size:10px;margin-bottom:4px;">' +
                                         d.toLocaleDateString() +
                                         "</div>" +
                                         condRows +
@@ -2625,7 +2745,7 @@
                     .runFiltersNow();
             }
 
-            // ---- timer ----
+            // ---- timer / trigger ----
             function setTimer(m) {
                 google.script.run
                     .withSuccessHandler(function (msg) {
@@ -2646,8 +2766,6 @@
                     })
                     .updateInterval(m);
             }
-
-            // ---- trigger ----
             function activateTrigger() {
                 google.script.run
                     .withSuccessHandler(function () {
@@ -2674,17 +2792,18 @@
                 google.script.run
                     .withSuccessHandler(function (logs) {
                         var el = document.getElementById("log-list");
-                        if (!logs.length) {
+                        if (!logs || !logs.length) {
                             el.innerHTML =
                                 '<div class="empty"><div class="empty-icon">📋</div><p>No activity yet</p></div>';
                             return;
                         }
+
                         el.innerHTML = logs
                             .map(function (l, i) {
                                 var d = new Date(l.ts);
                                 var time =
                                     d.toLocaleDateString() +
-                                    " " +
+                                    "\n" +
                                     d.toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
@@ -2702,76 +2821,79 @@
                                                 ? "var(--warning)"
                                                 : "var(--success)";
 
-                                // conditions detail
-                                var condDetail = "";
+                                // conditions
+                                var condHTML = "";
                                 if (l.conditions && l.conditions.length) {
-                                    condDetail = (l.conditions || [])
-                                        .map(function (c) {
-                                            var cls = c.matched
-                                                ? "pass"
-                                                : "fail";
-                                            var sym = c.matched ? "✓" : "✗";
-                                            return (
-                                                '<div class="log-cond"><span class="cond-check ' +
-                                                cls +
-                                                '">' +
-                                                sym +
-                                                '</span><span class="pill pill-field" style="font-size:10px;">' +
-                                                c.field +
-                                                '</span><span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
-                                                esc(c.pattern) +
-                                                "</span></div>"
-                                            );
-                                        })
-                                        .join("");
+                                    condHTML =
+                                        '<div class="log-section">' +
+                                        '<div class="log-section-label">Conditions (' +
+                                        esc(l.logic || "AND") +
+                                        ")</div>" +
+                                        l.conditions
+                                            .map(function (c) {
+                                                var cls = c.matched
+                                                    ? "pass"
+                                                    : "fail";
+                                                return (
+                                                    '<div class="log-cond">' +
+                                                    '<span class="cond-check ' +
+                                                    cls +
+                                                    '">' +
+                                                    (c.matched ? "✓" : "✗") +
+                                                    "</span>" +
+                                                    '<span class="pill pill-field" style="font-size:10px;">' +
+                                                    esc(c.field) +
+                                                    "</span>" +
+                                                    '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
+                                                    esc(c.pattern) +
+                                                    "</span>" +
+                                                    "</div>"
+                                                );
+                                            })
+                                            .join("") +
+                                        "</div>";
                                 }
 
-                                var bodySection = l.body
-                                    ? '<div class="log-expand-section"><div class="log-expand-label">Body preview</div><div class="log-body-text">' +
+                                // body
+                                var bodyHTML = l.body
+                                    ? '<div class="log-section"><div class="log-section-label">Body preview</div><div class="log-body-text">' +
                                       esc(l.body) +
                                       "</div></div>"
                                     : "";
 
-                                var expandHTML = [
-                                    '<div class="log-expand" id="log-exp-' +
-                                        i +
-                                        '">',
-                                    '<div class="log-expand-section"><div class="log-expand-label">Rule</div><div style="color:var(--text);">' +
-                                        esc(l.ruleName || "") +
-                                        "</div></div>",
-                                    condDetail
-                                        ? '<div class="log-expand-section"><div class="log-expand-label">Conditions (' +
-                                          (l.logic || "AND") +
-                                          ")</div>" +
-                                          condDetail +
-                                          "</div>"
-                                        : "",
-                                    bodySection,
-                                    "</div>",
-                                ].join("");
+                                var expandHTML =
+                                    '<div class="log-expand" id="logx-' +
+                                    i +
+                                    '">' +
+                                    '<div class="log-section"><div class="log-section-label">Rule</div><div style="color:var(--text);">' +
+                                    esc(l.ruleName || "Unknown") +
+                                    "</div></div>" +
+                                    condHTML +
+                                    bodyHTML +
+                                    "</div>";
 
-                                return [
+                                return (
                                     '<div class="log-entry" onclick="toggleLogExpand(' +
-                                        i +
-                                        ')">',
-                                    '<div class="log-entry-header">',
-                                    '<span class="log-time">' +
-                                        time +
-                                        "</span>",
+                                    i +
+                                    ')">' +
+                                    '<div class="log-entry-header">' +
+                                    '<span class="log-time" style="white-space:pre-line;">' +
+                                    time +
+                                    "</span>" +
                                     '<span style="color:' +
-                                        col +
-                                        ';font-weight:600;">' +
-                                        esc(l.action) +
-                                        "</span>",
+                                    col +
+                                    ';font-weight:600;">' +
+                                    esc(l.action) +
+                                    "</span>" +
                                     '<span class="log-detail"><strong>' +
-                                        esc(l.from) +
-                                        "</strong> — " +
-                                        esc(l.subject) +
-                                        "</span>",
-                                    "</div>",
-                                    expandHTML,
-                                    "</div>",
-                                ].join("");
+                                    esc(l.from || "") +
+                                    "</strong> — " +
+                                    esc(l.subject || "") +
+                                    "</span>" +
+                                    "</div>" +
+                                    expandHTML +
+                                    "</div>"
+                                );
                             })
                             .join("");
                     })
@@ -2779,7 +2901,7 @@
             }
 
             function toggleLogExpand(i) {
-                var el = document.getElementById("log-exp-" + i);
+                var el = document.getElementById("logx-" + i);
                 if (el) el.classList.toggle("open");
             }
 
@@ -2796,7 +2918,7 @@
 
             // ---- init ----
             window.onload = function () {
-                addConditionRow("r"); // start with one empty condition row
+                addConditionRow("r");
                 loadRules();
                 loadStats();
             };
