@@ -12,7 +12,7 @@
 var RULES_KEY = "gmail_filter_rules";
 var LOG_KEY = "gmail_filter_log";
 var SETTINGS_KEY = "gmail_filter_settings";
-var MAX_LOG = 50; // reduced from 100 to stay under 9KB limit safely
+var MAX_LOG = 25; // prefer fewer, richer entries so rule/body details survive
 
 // ------------------------------------------------------------
 //  Web App entry point
@@ -145,7 +145,14 @@ function moveRule(id, direction) {
 // ------------------------------------------------------------
 function getLogs() {
   var raw = PropertiesService.getUserProperties().getProperty(LOG_KEY);
-  return raw ? JSON.parse(raw) : [];
+  var logs = raw ? JSON.parse(raw) : [];
+  var ruleMap = {};
+  getRules().forEach(function (rule) {
+    ruleMap[rule.id] = rule.name || "Unnamed rule";
+  });
+  return logs.map(function (entry) {
+    return normalizeLogEntry(entry, ruleMap);
+  });
 }
 
 function _flushLogs(newEntries) {
@@ -153,17 +160,28 @@ function _flushLogs(newEntries) {
   var existing = getLogs();
   var combined = newEntries.concat(existing);
   if (combined.length > MAX_LOG) combined = combined.slice(0, MAX_LOG);
-  // safety: if JSON is too large, drop body snippets
   var json = JSON.stringify(combined);
+  // safety: trim condition previews before dropping body/rule context
+  if (json.length > 8000) {
+    combined = combined.map(function (e) {
+      return Object.assign({}, e, {
+        conditions: (e.conditions || []).map(function (c) {
+          return Object.assign({}, c, { actualValue: "" });
+        }),
+      });
+    });
+    json = JSON.stringify(combined);
+  }
+  // next fallback: drop body snippets
   if (json.length > 8000) {
     combined = combined.map(function (e) {
       return Object.assign({}, e, { body: "" });
     });
     json = JSON.stringify(combined);
   }
-  // last resort: keep only 20 entries
+  // last resort: keep only 10 entries
   if (json.length > 8000) {
-    combined = combined.slice(0, 20);
+    combined = combined.slice(0, 10);
     json = JSON.stringify(combined);
   }
   PropertiesService.getUserProperties().setProperty(LOG_KEY, json);
@@ -203,15 +221,14 @@ function buildScopeQuery(scope) {
 // ------------------------------------------------------------
 function evaluateConditions(msg, rule) {
   var condResults = (rule.conditions || []).map(function (cond) {
-    var regex = new RegExp(cond.pattern, cond.flags || "i");
     var actualValue = getFieldValue(msg, cond.field);
-    var matched = regex.test(actualValue);
+    var matched = matchCondition(actualValue, cond, msg);
     return {
       field: cond.field,
       pattern: cond.pattern,
       flags: cond.flags || "i",
       matched: matched,
-      actualValue: actualValue.substring(0, 120), // store first 120 chars for debug
+      actualValue: makeSnippet(actualValue, 120),
     };
   });
 
@@ -327,35 +344,28 @@ function runFilters() {
     var threads = GmailApp.search(scopeQuery + " after:" + ts, 0, 200);
 
     threads.forEach(function (thread) {
-      // track which rules have already actioned this thread
-      // to avoid double-actioning (e.g. two rules both trying to trash same thread)
-      var threadActioned = {};
-
       thread.getMessages().forEach(function (msg) {
         if (msg.getDate() < since) return;
+        var actionTaken = false;
 
         scopeRules.forEach(function (rule) {
-          // skip if this rule already actioned this thread
-          if (threadActioned[rule.id]) return;
+          if (actionTaken) return;
 
           try {
             var eval_ = evaluateConditions(msg, rule);
             if (!eval_.passed) return;
 
-            applyAction(thread, msg, rule);
-            threadActioned[rule.id] = true;
-
-            hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
-
-            // slim log entry — body capped at 150 chars, only matched conditions stored
+            var fromValue = msg.getFrom();
+            var subjectValue = msg.getSubject();
             var bodySnippet = "";
             try {
-              bodySnippet = msg
-                .getPlainBody()
-                .replace(/\s+/g, " ")
-                .trim()
-                .substring(0, 150);
+              bodySnippet = makeSnippet(msg.getPlainBody(), 200);
             } catch (e) {}
+
+            applyAction(msg, rule);
+            actionTaken = true;
+
+            hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
 
             logsToWrite.push({
               ts: new Date().toISOString(),
@@ -363,15 +373,18 @@ function runFilters() {
               ruleName: rule.name || "Unnamed rule",
               action: rule.action,
               logic: rule.logic,
-              from: msg.getFrom(),
-              subject: msg.getSubject(),
+              messageId: msg.getId(),
+              threadId: thread.getId(),
+              from: fromValue,
+              subject: subjectValue,
               body: bodySnippet,
               conditions: eval_.condResults.map(function (c) {
-                // strip actualValue from stored log to save space
                 return {
                   field: c.field,
                   pattern: c.pattern,
+                  flags: c.flags,
                   matched: c.matched,
+                  actualValue: c.actualValue,
                 };
               }),
             });
@@ -382,6 +395,8 @@ function runFilters() {
               ruleName: rule.name || "Unnamed rule",
               action: "ERROR",
               logic: rule.logic,
+              messageId: msg.getId(),
+              threadId: thread.getId(),
               from: msg.getFrom(),
               subject: e.message,
               body: "",
@@ -424,40 +439,126 @@ function getFieldValue(msg, field) {
   }
 }
 
-function applyAction(thread, msg, rule) {
+function extractEmailAddresses(value) {
+  var matches = String(value || "").match(
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+  );
+  return matches
+    ? matches.map(function (email) {
+        return email.toLowerCase();
+      })
+    : [];
+}
+
+function looksLikeLiteralEmailPattern(pattern) {
+  return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(
+    String(pattern || "").trim(),
+  );
+}
+
+function makeSnippet(value, limit) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, limit || 120);
+}
+
+function matchCondition(actualValue, cond) {
+  var pattern = String(cond.pattern || "");
+  var flags = cond.flags || "i";
+  var field = cond.field;
+
+  if (
+    (field === "from" || field === "to") &&
+    looksLikeLiteralEmailPattern(pattern)
+  ) {
+    var expected = pattern.toLowerCase();
+    return extractEmailAddresses(actualValue).some(function (email) {
+      return email === expected;
+    });
+  }
+
+  var regex = new RegExp(pattern, flags);
+  return regex.test(String(actualValue || ""));
+}
+
+function normalizeLogEntry(entry, ruleMap) {
+  entry = entry || {};
+  return {
+    ts: entry.ts || "",
+    ruleId: entry.ruleId || "",
+    ruleName:
+      entry.ruleName || entry.rule || ruleMap[entry.ruleId] || "Unknown",
+    action: entry.action || "UNKNOWN",
+    logic: entry.logic || "AND",
+    messageId: entry.messageId || "",
+    threadId: entry.threadId || "",
+    from: entry.from || "",
+    subject: entry.subject || "",
+    body: entry.body || entry.bodySnippet || "",
+    conditions: (entry.conditions || []).map(function (cond) {
+      return {
+        field: cond.field || "",
+        pattern: cond.pattern || "",
+        flags: cond.flags || "i",
+        matched: cond.matched === true,
+        actualValue: cond.actualValue || "",
+      };
+    }),
+  };
+}
+
+function _getLabelId(name) {
+  _getOrCreateLabel(name);
+  var response = Gmail.Users.Labels.list("me");
+  var labels = (response && response.labels) || [];
+  for (var i = 0; i < labels.length; i++) {
+    if (labels[i].name.toLowerCase() === String(name).toLowerCase()) {
+      return labels[i].id;
+    }
+  }
+  throw new Error('Could not resolve label "' + name + '"');
+}
+
+function _modifyMessageLabels(messageId, addLabelIds, removeLabelIds) {
+  var resource = {};
+  if (addLabelIds && addLabelIds.length) resource.addLabelIds = addLabelIds;
+  if (removeLabelIds && removeLabelIds.length)
+    resource.removeLabelIds = removeLabelIds;
+  Gmail.Users.Messages.modify(resource, "me", messageId);
+}
+
+function applyAction(msg, rule) {
+  var messageId = msg.getId();
   switch (rule.action) {
     case "trash":
-      thread.moveToTrash();
+      Gmail.Users.Messages.trash("me", messageId);
       break;
     case "delete":
       try {
-        thread.moveToTrash();
-        Gmail.Users.Threads.remove("me", thread.getId());
+        Gmail.Users.Messages.remove("me", messageId);
       } catch (e) {
-        throw new Error(
-          "Permanent delete failed: " + e.message + " — moved to trash instead",
-        );
+        throw new Error("Permanent delete failed: " + e.message);
       }
       break;
     case "archive":
-      thread.moveToArchive();
+      _modifyMessageLabels(messageId, [], ["INBOX"]);
       break;
     case "label":
-      thread.addLabel(_getOrCreateLabel(rule.label));
+      _modifyMessageLabels(messageId, [_getLabelId(rule.label)], []);
       break;
     case "label+archive":
-      thread.addLabel(_getOrCreateLabel(rule.label));
-      thread.moveToArchive();
+      _modifyMessageLabels(messageId, [_getLabelId(rule.label)], ["INBOX"]);
       break;
     case "trash+label":
-      thread.moveToTrash();
-      thread.addLabel(_getOrCreateLabel(rule.label));
+      _modifyMessageLabels(messageId, [_getLabelId(rule.label)], []);
+      Gmail.Users.Messages.trash("me", messageId);
       break;
     case "star":
       msg.star();
       break;
     case "markread":
-      thread.markRead();
+      msg.markRead();
       break;
   }
 }

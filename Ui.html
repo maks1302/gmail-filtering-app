@@ -2834,6 +2834,12 @@
                                                 var cls = c.matched
                                                     ? "pass"
                                                     : "fail";
+                                                var actualValueHTML =
+                                                    c.actualValue
+                                                        ? '<div class="actual-val">actual: ' +
+                                                          esc(c.actualValue) +
+                                                          "</div>"
+                                                        : "";
                                                 return (
                                                     '<div class="log-cond">' +
                                                     '<span class="cond-check ' +
@@ -2847,7 +2853,8 @@
                                                     '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                                     esc(c.pattern) +
                                                     "</span>" +
-                                                    "</div>"
+                                                    "</div>" +
+                                                    actualValueHTML
                                                 );
                                             })
                                             .join("") +
