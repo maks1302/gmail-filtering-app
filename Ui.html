@@ -610,6 +610,16 @@
             .rule-card:hover {
                 border-color: var(--border2);
             }
+            .rule-card.dragging {
+                opacity: 0.55;
+                border-color: var(--accent);
+            }
+            .rule-card.drop-before {
+                box-shadow: inset 0 3px 0 var(--accent);
+            }
+            .rule-card.drop-after {
+                box-shadow: inset 0 -3px 0 var(--accent);
+            }
             .rule-card.disabled {
                 opacity: 0.4;
             }
@@ -680,6 +690,24 @@
                 flex-shrink: 0;
                 flex-wrap: wrap;
                 align-items: flex-start;
+            }
+            .drag-handle {
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--muted);
+                cursor: grab;
+                font-size: 14px;
+                padding: 4px 8px;
+                line-height: 1;
+                user-select: none;
+            }
+            .drag-handle:hover {
+                color: var(--text);
+                border-color: var(--border2);
+            }
+            .drag-handle:active {
+                cursor: grabbing;
             }
             .order-btns {
                 display: flex;
@@ -1382,8 +1410,9 @@
                             <div class="section-title">Your Rules</div>
                             <div class="section-note">
                                 ⚠️ Rules run top-to-bottom — order matters. Use
-                                ↑↓ to reorder.<br />🐛 Use the Debug button to
-                                see exactly why a rule matches or doesn't.
+                                drag & drop or ↑↓ to reorder.<br />🐛 Use the
+                                Debug button to see exactly why a rule matches
+                                or doesn't.
                             </div>
                         </div>
                     </div>
@@ -1544,12 +1573,16 @@
                                         margin-bottom: 6px;
                                     "
                                 >
-                                    🐛 Unescaped dot in email addresses
+                                    ✉️ Exact emails vs regex
                                 </div>
                                 <div style="color: var(--muted)">
-                                    The <span class="mono">.</span> in regex
-                                    means <em>any character</em>, not a literal
-                                    dot.
+                                    In <strong>From</strong> and
+                                    <strong>To</strong>, a plain email like
+                                    <span class="mono"
+                                        >example.us@gmail.com</span
+                                    >
+                                    now matches that exact address
+                                    <strong>literally</strong>.
                                 </div>
                                 <div
                                     style="
@@ -1567,10 +1600,10 @@
                                                 margin-bottom: 3px;
                                             "
                                         >
-                                            ❌ Wrong
+                                            ✓ Exact match
                                         </div>
                                         <span class="mono"
-                                            >canopy.ua@gmail.com</span
+                                            >example.us@gmail.com</span
                                         >
                                     </div>
                                     <div>
@@ -1581,12 +1614,21 @@
                                                 margin-bottom: 3px;
                                             "
                                         >
-                                            ✓ Correct
+                                            ✓ Regex match
                                         </div>
-                                        <span class="mono"
-                                            >canopy\.ua@gmail\.com</span
-                                        >
+                                        <span class="mono">.*@gmail\.com</span>
                                     </div>
+                                </div>
+                                <div
+                                    style="
+                                        margin-top: 8px;
+                                        color: var(--muted);
+                                        font-size: 12px;
+                                    "
+                                >
+                                    Only escape dots like
+                                    <span class="mono">\.</span> when you are
+                                    intentionally writing regex.
                                 </div>
                             </div>
                             <div
@@ -1658,9 +1700,25 @@
                             </tr>
                             <tr>
                                 <td class="mono">@domain\.com</td>
-                                <td>Exact domain</td>
+                                <td>Literal domain in regex</td>
                                 <td style="color: var(--muted)">
                                     Use \. for literal dot
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="mono">.*@gmail\.com</td>
+                                <td>Any Gmail sender</td>
+                                <td style="color: var(--muted)">
+                                    Good for From / To regex rules
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="mono">
+                                    ^.*&lt;ceo@company\.com&gt;$
+                                </td>
+                                <td>Exact formatted sender line</td>
+                                <td style="color: var(--muted)">
+                                    Useful when Gmail shows Name &lt;email&gt;
                                 </td>
                             </tr>
                             <tr>
@@ -1678,6 +1736,31 @@
                                 </td>
                             </tr>
                         </table>
+                        <div
+                            style="
+                                margin-top: 14px;
+                                display: flex;
+                                flex-direction: column;
+                                gap: 8px;
+                                color: var(--muted);
+                                font-size: 12px;
+                            "
+                        >
+                            <div>
+                                Ask an LLM for help when needed:
+                                <span class="mono"
+                                    >Write me a regex for Gmail From that
+                                    matches any sender at gmail.com but not
+                                    support@gmail.com</span
+                                >
+                            </div>
+                            <div>
+                                Verify new patterns with
+                                <strong>Test</strong> or
+                                <strong>🐛 Debug</strong>
+                                before enabling destructive actions.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -1847,6 +1930,7 @@
             var currentInterval = 1;
             var editingRuleId = null;
             var logicState = { r: "AND", e: "AND" };
+            var draggedRuleId = null;
 
             // ---- mobile ----
             function toggleSidebar() {
@@ -1887,16 +1971,36 @@
                 }, 3500);
             }
 
-            // ---- regex dot warning ----
-            function checkDotWarning(input, warnId) {
-                var val = input.value;
-                // warn if pattern looks like email/domain with unescaped dots
-                var hasEmail = val.indexOf("@") !== -1;
-                var hasUnescapedDot = /(?<!\\)\./.test(val);
+            // ---- pattern helper ----
+            function checkPatternHint(input, warnId) {
+                var val = input.value.trim();
                 var el = document.getElementById(warnId);
-                if (el && hasEmail && hasUnescapedDot) {
+                if (!el) return;
+
+                var row = input.closest(".condition-row");
+                var field = row ? row.querySelector(".cond-field").value : "";
+                var looksLikePlainEmail =
+                    /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(val);
+                var looksRegexLike =
+                    /[\\^$*+?()[\]{}|]/.test(val) ||
+                    (val.indexOf("@") !== -1 && /(?<!\\)\./.test(val));
+
+                if (
+                    (field === "from" || field === "to") &&
+                    looksLikePlainEmail
+                ) {
+                    el.innerHTML =
+                        "ℹ️ Plain email detected — this will match <strong>exactly</strong>. Use regex like <strong>.*@gmail\\\\.com</strong> only when you want pattern matching.";
                     el.classList.add("show");
-                } else if (el) {
+                } else if (
+                    (field === "from" || field === "to") &&
+                    val.indexOf("@") !== -1 &&
+                    looksRegexLike
+                ) {
+                    el.innerHTML =
+                        "ℹ️ Regex mode — escape literal dots with <strong>\\\\.</strong> in email parts, for example <strong>.*@gmail\\\\.com</strong>.";
+                    el.classList.add("show");
+                } else {
                     el.classList.remove("show");
                 }
             }
@@ -1968,20 +2072,24 @@
                     idx +
                     '">' +
                     badge +
-                    '<select class="cond-field" style="max-width:100px;">' +
+                    "<select class=\"cond-field\" style=\"max-width:100px;\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
+                    warnId +
+                    "')\">" +
                     fieldOpts +
                     "</select>" +
                     '<div style="flex:2;min-width:100px;display:flex;flex-direction:column;gap:4px;">' +
                     '<input type="text" class="cond-pattern" placeholder="pattern" value="' +
                     pattern +
-                    '" oninput="checkDotWarning(this,\'' +
+                    '" oninput="checkPatternHint(this,\'' +
                     warnId +
                     "')\">" +
                     '<div class="warn-box" id="' +
                     warnId +
-                    '">⚠️ Unescaped dot detected — use <strong>\\.</strong> for a literal dot in email addresses (e.g. <strong>canopy\\.ua@gmail\\.com</strong>)</div>' +
+                    '"></div>' +
                     "</div>" +
-                    '<select class="cond-flags" style="max-width:90px;">' +
+                    "<select class=\"cond-flags\" style=\"max-width:90px;\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
+                    warnId +
+                    "')\">" +
                     flagOpts +
                     "</select>" +
                     '<button class="condition-remove" onclick="removeConditionRow(this,\'' +
@@ -2011,7 +2119,7 @@
                 var newRow = list.lastElementChild;
                 var inp = newRow.querySelector(".cond-pattern");
                 var warnId = prefix + "-warn-" + idx;
-                if (inp) checkDotWarning(inp, warnId);
+                if (inp) checkPatternHint(inp, warnId);
             }
 
             function removeConditionRow(btn, prefix) {
@@ -2266,7 +2374,15 @@
                                 (disabled ? " disabled" : "") +
                                 '" id="rc-' +
                                 r.id +
-                                '">',
+                                '" draggable="true" ondragstart="startRuleDrag(event,\'' +
+                                r.id +
+                                "')\" ondragover=\"onRuleDragOver(event,'" +
+                                r.id +
+                                "')\" ondragleave=\"onRuleDragLeave(event,'" +
+                                r.id +
+                                "')\" ondrop=\"onRuleDrop(event,'" +
+                                r.id +
+                                '\')" ondragend="endRuleDrag()">',
                             '<div class="rule-card-header">',
                             '<input type="checkbox" class="rule-toggle" ' +
                                 (disabled ? "" : "checked") +
@@ -2298,6 +2414,7 @@
                             "</div>",
                             "</div>",
                             '<div class="rule-actions">',
+                            '<span class="drag-handle" title="Drag to reorder">⋮⋮</span>',
                             '<div class="order-btns">',
                             '<button class="order-btn" onclick="moveRule(\'' +
                                 r.id +
@@ -2331,6 +2448,105 @@
                         ].join("");
                     })
                     .join("");
+            }
+
+            function clearDropIndicators() {
+                document
+                    .querySelectorAll(".rule-card")
+                    .forEach(function (card) {
+                        card.classList.remove("drop-before");
+                        card.classList.remove("drop-after");
+                    });
+            }
+
+            function startRuleDrag(event, id) {
+                draggedRuleId = id;
+                var card = document.getElementById("rc-" + id);
+                if (card) card.classList.add("dragging");
+                if (event.dataTransfer) {
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", id);
+                }
+            }
+
+            function onRuleDragOver(event, targetId) {
+                if (!draggedRuleId || draggedRuleId === targetId) return;
+                event.preventDefault();
+                clearDropIndicators();
+                var card = document.getElementById("rc-" + targetId);
+                if (!card) return;
+                var rect = card.getBoundingClientRect();
+                var position =
+                    event.clientY < rect.top + rect.height / 2
+                        ? "before"
+                        : "after";
+                card.dataset.dropPosition = position;
+                card.classList.add(
+                    position === "before" ? "drop-before" : "drop-after",
+                );
+            }
+
+            function onRuleDragLeave(event, targetId) {
+                var card = document.getElementById("rc-" + targetId);
+                if (!card) return;
+                var related = event.relatedTarget;
+                if (related && card.contains(related)) return;
+                card.classList.remove("drop-before");
+                card.classList.remove("drop-after");
+            }
+
+            function onRuleDrop(event, targetId) {
+                event.preventDefault();
+                if (!draggedRuleId || draggedRuleId === targetId) {
+                    endRuleDrag();
+                    return;
+                }
+
+                var draggedIndex = rules.findIndex(function (r) {
+                    return r.id === draggedRuleId;
+                });
+                var targetIndex = rules.findIndex(function (r) {
+                    return r.id === targetId;
+                });
+                if (draggedIndex === -1 || targetIndex === -1) {
+                    endRuleDrag();
+                    return;
+                }
+
+                var targetCard = document.getElementById("rc-" + targetId);
+                var position =
+                    (targetCard && targetCard.dataset.dropPosition) || "before";
+                var newIndex = targetIndex;
+                if (position === "after") newIndex = targetIndex + 1;
+                if (draggedIndex < newIndex) newIndex -= 1;
+                if (newIndex === draggedIndex) {
+                    endRuleDrag();
+                    return;
+                }
+
+                var moved = rules.splice(draggedIndex, 1)[0];
+                rules.splice(newIndex, 0, moved);
+                renderRules();
+
+                google.script.run
+                    .withFailureHandler(function (e) {
+                        toast("Reorder failed: " + e.message, "error");
+                        loadRules();
+                    })
+                    .moveRuleToIndex(draggedRuleId, newIndex);
+
+                endRuleDrag();
+            }
+
+            function endRuleDrag() {
+                clearDropIndicators();
+                document
+                    .querySelectorAll(".rule-card")
+                    .forEach(function (card) {
+                        card.classList.remove("dragging");
+                        delete card.dataset.dropPosition;
+                    });
+                draggedRuleId = null;
             }
 
             function esc(s) {

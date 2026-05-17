@@ -140,6 +140,22 @@ function moveRule(id, direction) {
   return true;
 }
 
+function moveRuleToIndex(id, newIndex) {
+  var rules = getRules();
+  var idx = -1;
+  rules.forEach(function (r, i) {
+    if (r.id === id) idx = i;
+  });
+  if (idx === -1) return false;
+  newIndex = Math.max(0, Math.min(parseInt(newIndex, 10), rules.length - 1));
+  if (idx === newIndex) return false;
+
+  var moved = rules.splice(idx, 1)[0];
+  rules.splice(newIndex, 0, moved);
+  saveRules(rules);
+  return true;
+}
+
 // ------------------------------------------------------------
 //  Log storage
 // ------------------------------------------------------------
