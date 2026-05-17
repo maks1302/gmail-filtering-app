@@ -58,7 +58,7 @@
                 margin-left: var(--sidebar);
                 flex: 1;
                 padding: 28px 32px;
-                max-width: 900px;
+                width: calc(100vw - var(--sidebar));
             }
 
             @media (max-width: 700px) {
@@ -367,13 +367,20 @@
                 flex: 1;
                 min-width: 80px;
             }
-            .condition-main input {
+            .condition-main .cond-pattern {
                 flex: 2;
                 min-width: 100px;
             }
             .condition-pattern-wrap {
                 flex: 2;
                 min-width: 100px;
+            }
+            .condition-options {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                margin-left: auto;
+                flex-shrink: 0;
             }
             .regex-check {
                 display: inline-flex;
@@ -400,6 +407,9 @@
             }
             .regex-check.on {
                 color: var(--text);
+            }
+            .cond-flags {
+                min-width: 150px;
             }
             .cond-flags:disabled {
                 opacity: 0.45;
@@ -2072,7 +2082,37 @@
                 var flags = row.querySelector(".cond-flags");
                 var on = toggle && toggle.checked;
                 if (wrap) wrap.classList.toggle("on", !!on);
-                if (flags) flags.disabled = !on;
+                if (flags) {
+                    var selected = flags.value;
+                    flags.innerHTML = getFlagOptionsHTML(on, selected);
+                    if (!on && flags.value === "im") flags.value = "i";
+                }
+            }
+
+            function getFlagOptionsHTML(regexOn, selected) {
+                var options = regexOn
+                    ? [
+                          { v: "i", l: "case insensitive" },
+                          { v: "", l: "case sensitive" },
+                          { v: "im", l: "multiline" },
+                      ]
+                    : [
+                          { v: "i", l: "case insensitive" },
+                          { v: "", l: "case sensitive" },
+                      ];
+                return options
+                    .map(function (o) {
+                        return (
+                            '<option value="' +
+                            o.v +
+                            '"' +
+                            ((selected || "i") === o.v ? " selected" : "") +
+                            ">" +
+                            o.l +
+                            "</option>"
+                        );
+                    })
+                    .join("");
             }
 
             function checkPatternHint(input, warnId) {
@@ -2154,27 +2194,13 @@
                     })
                     .join("");
 
-                var flagOpts = [
-                    { v: "i", l: "case off" },
-                    { v: "", l: "case on" },
-                    { v: "im", l: "multiline" },
-                ]
-                    .map(function (o) {
-                        return (
-                            '<option value="' +
-                            o.v +
-                            '"' +
-                            (cond && cond.flags === o.v ? " selected" : "") +
-                            ">" +
-                            o.l +
-                            "</option>"
-                        );
-                    })
-                    .join("");
-
                 var warnId = prefix + "-warn-" + idx;
                 var pattern = esc(cond ? cond.pattern : "");
                 var regexOn = cond && cond.mode === "regex";
+                var flagOpts = getFlagOptionsHTML(
+                    regexOn,
+                    cond && typeof cond.flags === "string" ? cond.flags : "i",
+                );
 
                 return (
                     '<div class="condition-row" data-idx="' +
@@ -2194,6 +2220,7 @@
                     warnId +
                     "')\">" +
                     "</div>" +
+                    '<div class="condition-options">' +
                     '<label class="regex-check' +
                     (regexOn ? " on" : "") +
                     '">' +
@@ -2204,8 +2231,7 @@
                     "')\">" +
                     "<span>Regex</span>" +
                     "</label>" +
-                    "<select class=\"cond-flags\" style=\"max-width:90px;\" " +
-                    (regexOn ? "" : "disabled ") +
+                    '<select class="cond-flags" ' +
                     "onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
                     "')\">" +
@@ -2214,6 +2240,7 @@
                     '<button class="condition-remove" onclick="removeConditionRow(this,\'' +
                     prefix +
                     '\')" title="Remove">×</button>' +
+                    "</div>" +
                     "</div>" +
                     '<div class="warn-box" id="' +
                     warnId +
