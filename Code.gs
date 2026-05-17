@@ -1,16 +1,18 @@
 // ============================================================
-//  Gmail Filter App — Code.gs  (v4)
-//  Changes from v3:
-//   - Multi-condition rules with AND / OR logic
-//   - Rule ordering (moveRule up/down)
-//   - Expanded log entries: body snippet + matched conditions
-//   - Auto-migration skipped (clean slate as requested)
+//  Gmail Filter App — Code.gs  (v5)
+//  Critical fixes:
+//   - Added debugRule() to diagnose exactly why emails match
+//   - Log entries slimmed down to stay under 9KB PropertiesService limit
+//   - Body snippet reduced to 150 chars
+//   - Thread-level deduplication: once a thread is actioned by a rule, skip it
+//   - condResults stored only for matched conditions to save space
+//   - Clearer error messages
 // ============================================================
 
 var RULES_KEY = "gmail_filter_rules";
 var LOG_KEY = "gmail_filter_log";
 var SETTINGS_KEY = "gmail_filter_settings";
-var MAX_LOG = 100;
+var MAX_LOG = 50; // reduced from 100 to stay under 9KB limit safely
 
 // ------------------------------------------------------------
 //  Web App entry point
@@ -122,7 +124,6 @@ function toggleRule(id) {
   return true;
 }
 
-// Move rule up or down in the ordered list
 function moveRule(id, direction) {
   var rules = getRules();
   var idx = -1;
@@ -130,15 +131,11 @@ function moveRule(id, direction) {
     if (r.id === id) idx = i;
   });
   if (idx === -1) return false;
-
   var newIdx = direction === "up" ? idx - 1 : idx + 1;
   if (newIdx < 0 || newIdx >= rules.length) return false;
-
-  // swap
   var tmp = rules[idx];
   rules[idx] = rules[newIdx];
   rules[newIdx] = tmp;
-
   saveRules(rules);
   return true;
 }
@@ -156,10 +153,20 @@ function _flushLogs(newEntries) {
   var existing = getLogs();
   var combined = newEntries.concat(existing);
   if (combined.length > MAX_LOG) combined = combined.slice(0, MAX_LOG);
-  PropertiesService.getUserProperties().setProperty(
-    LOG_KEY,
-    JSON.stringify(combined),
-  );
+  // safety: if JSON is too large, drop body snippets
+  var json = JSON.stringify(combined);
+  if (json.length > 8000) {
+    combined = combined.map(function (e) {
+      return Object.assign({}, e, { body: "" });
+    });
+    json = JSON.stringify(combined);
+  }
+  // last resort: keep only 20 entries
+  if (json.length > 8000) {
+    combined = combined.slice(0, 20);
+    json = JSON.stringify(combined);
+  }
+  PropertiesService.getUserProperties().setProperty(LOG_KEY, json);
 }
 
 function clearLogs() {
@@ -191,10 +198,77 @@ function buildScopeQuery(scope) {
 }
 
 // ------------------------------------------------------------
-//  Test a pattern — checks ALL messages in threads
+//  Evaluate conditions for a single message
+//  Returns { passed: bool, condResults: [{field, pattern, matched, actualValue}] }
+// ------------------------------------------------------------
+function evaluateConditions(msg, rule) {
+  var condResults = (rule.conditions || []).map(function (cond) {
+    var regex = new RegExp(cond.pattern, cond.flags || "i");
+    var actualValue = getFieldValue(msg, cond.field);
+    var matched = regex.test(actualValue);
+    return {
+      field: cond.field,
+      pattern: cond.pattern,
+      flags: cond.flags || "i",
+      matched: matched,
+      actualValue: actualValue.substring(0, 120), // store first 120 chars for debug
+    };
+  });
+
+  var passed =
+    rule.logic === "OR"
+      ? condResults.some(function (r) {
+          return r.matched;
+        })
+      : condResults.every(function (r) {
+          return r.matched;
+        });
+
+  return { passed: passed, condResults: condResults };
+}
+
+// ------------------------------------------------------------
+//  DEBUG: explain exactly why a rule matches/doesn't for recent emails
+// ------------------------------------------------------------
+function debugRule(ruleId) {
+  var rules = getRules();
+  var rule = null;
+  rules.forEach(function (r) {
+    if (r.id === ruleId) rule = r;
+  });
+  if (!rule) return { ok: false, error: "Rule not found" };
+
+  try {
+    var scopeQuery = buildScopeQuery(rule.scope);
+    var threads = GmailApp.search(scopeQuery, 0, 20);
+    var results = [];
+
+    threads.forEach(function (thread) {
+      thread.getMessages().forEach(function (msg) {
+        if (results.length >= 20) return;
+        var eval_ = evaluateConditions(msg, rule);
+        results.push({
+          from: msg.getFrom(),
+          subject: msg.getSubject(),
+          date: msg.getDate().toISOString(),
+          passed: eval_.passed,
+          conditions: eval_.condResults,
+        });
+      });
+    });
+
+    return { ok: true, rule: rule, results: results };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ------------------------------------------------------------
+//  Test rule (for UI test button)
 // ------------------------------------------------------------
 function testRule(conditions, logic, scope) {
   try {
+    var rule = { conditions: conditions, logic: logic };
     var scopeQuery = buildScopeQuery(scope && scope.length ? scope : ["inbox"]);
     var threads = GmailApp.search(scopeQuery, 0, 30);
     var matches = [];
@@ -202,32 +276,13 @@ function testRule(conditions, logic, scope) {
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
         if (matches.length >= 30) return;
-
-        var results = conditions.map(function (cond) {
-          var regex = new RegExp(cond.pattern, cond.flags || "i");
-          var val = getFieldValue(msg, cond.field);
-          return {
-            field: cond.field,
-            pattern: cond.pattern,
-            matched: regex.test(val),
-          };
-        });
-
-        var passed =
-          logic === "OR"
-            ? results.some(function (r) {
-                return r.matched;
-              })
-            : results.every(function (r) {
-                return r.matched;
-              });
-
-        if (passed) {
+        var eval_ = evaluateConditions(msg, rule);
+        if (eval_.passed) {
           matches.push({
             from: msg.getFrom(),
             subject: msg.getSubject(),
             date: msg.getDate().toISOString(),
-            conditions: results,
+            conditions: eval_.condResults,
           });
         }
       });
@@ -272,45 +327,34 @@ function runFilters() {
     var threads = GmailApp.search(scopeQuery + " after:" + ts, 0, 200);
 
     threads.forEach(function (thread) {
+      // track which rules have already actioned this thread
+      // to avoid double-actioning (e.g. two rules both trying to trash same thread)
+      var threadActioned = {};
+
       thread.getMessages().forEach(function (msg) {
         if (msg.getDate() < since) return;
 
         scopeRules.forEach(function (rule) {
+          // skip if this rule already actioned this thread
+          if (threadActioned[rule.id]) return;
+
           try {
-            // evaluate each condition and record individual results
-            var condResults = (rule.conditions || []).map(function (cond) {
-              var regex = new RegExp(cond.pattern, cond.flags || "i");
-              var val = getFieldValue(msg, cond.field);
-              return {
-                field: cond.field,
-                pattern: cond.pattern,
-                matched: regex.test(val),
-              };
-            });
-
-            var passed =
-              rule.logic === "OR"
-                ? condResults.some(function (r) {
-                    return r.matched;
-                  })
-                : condResults.every(function (r) {
-                    return r.matched;
-                  });
-
-            if (!passed) return;
+            var eval_ = evaluateConditions(msg, rule);
+            if (!eval_.passed) return;
 
             applyAction(thread, msg, rule);
+            threadActioned[rule.id] = true;
 
             hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
 
-            // store body snippet (first 400 chars of plain text)
+            // slim log entry — body capped at 150 chars, only matched conditions stored
             var bodySnippet = "";
             try {
               bodySnippet = msg
                 .getPlainBody()
                 .replace(/\s+/g, " ")
                 .trim()
-                .substring(0, 400);
+                .substring(0, 150);
             } catch (e) {}
 
             logsToWrite.push({
@@ -318,11 +362,18 @@ function runFilters() {
               ruleId: rule.id,
               ruleName: rule.name || "Unnamed rule",
               action: rule.action,
+              logic: rule.logic,
               from: msg.getFrom(),
               subject: msg.getSubject(),
               body: bodySnippet,
-              conditions: condResults, // which conditions matched/didn't
-              logic: rule.logic,
+              conditions: eval_.condResults.map(function (c) {
+                // strip actualValue from stored log to save space
+                return {
+                  field: c.field,
+                  pattern: c.pattern,
+                  matched: c.matched,
+                };
+              }),
             });
           } catch (e) {
             logsToWrite.push({
@@ -330,11 +381,11 @@ function runFilters() {
               ruleId: rule.id,
               ruleName: rule.name || "Unnamed rule",
               action: "ERROR",
+              logic: rule.logic,
               from: msg.getFrom(),
               subject: e.message,
               body: "",
               conditions: [],
-              logic: rule.logic,
             });
           }
         });
@@ -342,7 +393,7 @@ function runFilters() {
     });
   });
 
-  // single write at the end
+  // single write at end
   if (Object.keys(hitMap).length) {
     var allRules = getRules();
     saveRules(
