@@ -753,19 +753,33 @@
                 align-items: flex-start;
             }
             .drag-handle {
-                background: var(--bg3);
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--muted);
+                width: 18px;
+                min-height: 52px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
                 cursor: grab;
-                font-size: 14px;
-                padding: 4px 8px;
-                line-height: 1;
                 user-select: none;
+                flex-shrink: 0;
+                color: var(--muted);
+                position: relative;
+            }
+            .drag-handle::before {
+                content: "";
+                width: 3px;
+                height: 3px;
+                border-radius: 50%;
+                background: currentColor;
+                box-shadow:
+                    0 8px 0 currentColor,
+                    0 16px 0 currentColor,
+                    6px 0 0 currentColor,
+                    6px 8px 0 currentColor,
+                    6px 16px 0 currentColor;
+                opacity: 0.9;
             }
             .drag-handle:hover {
                 color: var(--text);
-                border-color: var(--border2);
             }
             .drag-handle:active {
                 cursor: grabbing;
@@ -2563,6 +2577,7 @@
                                 r.id +
                                 '\')" ondragend="endRuleDrag()">',
                             '<div class="rule-card-header">',
+                            '<span class="drag-handle" title="Drag to reorder"></span>',
                             '<input type="checkbox" class="rule-toggle" ' +
                                 (disabled ? "" : "checked") +
                                 " onchange=\"toggleRule('" +
@@ -2593,7 +2608,6 @@
                             "</div>",
                             "</div>",
                             '<div class="rule-actions">',
-                            '<span class="drag-handle" title="Drag to reorder">⋮⋮</span>',
                             '<div class="order-btns">',
                             '<button class="order-btn" onclick="moveRule(\'' +
                                 r.id +
