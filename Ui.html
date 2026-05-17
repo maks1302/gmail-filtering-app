@@ -82,7 +82,6 @@
                 font-size: 11px;
                 color: var(--muted);
             }
-
             .nav-item {
                 display: flex;
                 align-items: center;
@@ -104,7 +103,6 @@
                 background: var(--bg3);
                 border-left-color: var(--accent);
             }
-
             .sidebar-footer {
                 margin-top: auto;
                 padding: 16px 20px 0;
@@ -190,6 +188,9 @@
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 margin-bottom: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
 
             /* form */
@@ -215,8 +216,7 @@
                 letter-spacing: 0.4px;
             }
             input,
-            select,
-            textarea {
+            select {
                 background: var(--bg3);
                 border: 1px solid var(--border);
                 border-radius: 7px;
@@ -239,7 +239,7 @@
                 background: var(--bg2);
             }
 
-            /* scope checkboxes */
+            /* scope chips */
             .scope-group {
                 display: flex;
                 flex-wrap: wrap;
@@ -263,20 +263,18 @@
             .scope-chip input[type="checkbox"] {
                 display: none;
             }
-            .scope-chip:has(input:checked),
             .scope-chip.checked {
                 border-color: var(--accent);
                 color: var(--accent);
                 background: rgba(79, 124, 255, 0.1);
             }
-            .scope-chip.danger:has(input:checked),
             .scope-chip.danger.checked {
                 border-color: var(--danger);
                 color: var(--danger);
                 background: rgba(255, 79, 106, 0.1);
             }
 
-            /* timer control */
+            /* timer */
             .timer-row {
                 display: flex;
                 align-items: center;
@@ -356,6 +354,14 @@
             .btn-success:hover {
                 opacity: 0.9;
             }
+            .btn-warning {
+                background: transparent;
+                color: var(--warning);
+                border: 1px solid rgba(251, 191, 36, 0.3);
+            }
+            .btn-warning:hover {
+                background: rgba(251, 191, 36, 0.1);
+            }
             .btn-stop {
                 background: transparent;
                 color: var(--warning);
@@ -394,6 +400,10 @@
             }
             .rule-card.disabled {
                 opacity: 0.4;
+            }
+            .rule-card.editing {
+                border-color: var(--accent);
+                background: rgba(79, 124, 255, 0.04);
             }
 
             .rule-toggle {
@@ -499,6 +509,18 @@
                 display: flex;
                 gap: 6px;
                 flex-shrink: 0;
+                align-items: flex-start;
+            }
+
+            /* inline edit panel */
+            .edit-panel {
+                display: none;
+                margin-top: 14px;
+                padding-top: 14px;
+                border-top: 1px solid var(--border);
+            }
+            .edit-panel.open {
+                display: block;
             }
 
             /* section header */
@@ -578,6 +600,11 @@
             .test-match-subject {
                 color: var(--muted);
             }
+            .test-match-date {
+                color: var(--muted);
+                font-size: 11px;
+                margin-top: 2px;
+            }
 
             /* toast */
             .toast {
@@ -619,7 +646,6 @@
                 color: var(--warning);
             }
 
-            /* spin */
             .spin {
                 display: inline-block;
                 width: 13px;
@@ -643,7 +669,6 @@
                 border-radius: 3px;
             }
 
-            /* guide table */
             .guide-table {
                 width: 100%;
                 border-collapse: collapse;
@@ -669,6 +694,58 @@
                 color: #a98cff;
                 font-size: 12px;
             }
+
+            /* modal overlay */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 200;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal {
+                background: var(--bg2);
+                border: 1px solid var(--border2);
+                border-radius: 14px;
+                padding: 28px;
+                width: 560px;
+                max-width: calc(100vw - 40px);
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+            }
+            .modal-title {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .modal-close {
+                cursor: pointer;
+                color: var(--muted);
+                font-size: 20px;
+                background: none;
+                border: none;
+                color: var(--muted);
+                padding: 0 4px;
+            }
+            .modal-close:hover {
+                color: var(--text);
+            }
+            .modal-footer {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 20px;
+                padding-top: 16px;
+                border-top: 1px solid var(--border);
+            }
         </style>
     </head>
     <body>
@@ -679,7 +756,7 @@
                     <div class="logo-icon">✉️</div>
                     <div>
                         <div class="logo-text">GmailFilter</div>
-                        <div class="logo-sub">Apps Script v2</div>
+                        <div class="logo-sub">Apps Script v3</div>
                     </div>
                 </div>
                 <div
@@ -724,7 +801,7 @@
             </aside>
 
             <main class="main">
-                <!-- ===================== RULES PAGE ===================== -->
+                <!-- ========== RULES PAGE ========== -->
                 <div class="page active" id="page-rules">
                     <div class="stats-row">
                         <div class="stat-card">
@@ -736,7 +813,7 @@
                             <div class="stat-value" id="stat-active">—</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Emails Actioned</div>
+                            <div class="stat-label">Recent Actions</div>
                             <div class="stat-value" id="stat-log">—</div>
                         </div>
                     </div>
@@ -784,7 +861,12 @@
                             </div>
                             <div class="form-group">
                                 <label>Action</label>
-                                <select id="r-action" onchange="toggleLabel()">
+                                <select
+                                    id="r-action"
+                                    onchange="
+                                        toggleLabel('r-label-group', 'r-action')
+                                    "
+                                >
                                     <option value="trash">
                                         🗑️ Move to Trash
                                     </option>
@@ -807,7 +889,7 @@
                             </div>
                             <div
                                 class="form-group"
-                                id="label-group"
+                                id="r-label-group"
                                 style="display: none"
                             >
                                 <label>Label Name</label>
@@ -817,72 +899,85 @@
                                     placeholder="e.g. Newsletters"
                                 />
                             </div>
-
-                            <!-- Scope selector -->
                             <div class="form-group form-full">
-                                <label>Scan Scope — where to look</label>
+                                <label>Scan Scope</label>
                                 <div class="scope-group" id="scope-group">
                                     <label
                                         class="scope-chip checked"
                                         id="chip-inbox"
-                                    >
-                                        <input
+                                        ><input
                                             type="checkbox"
                                             value="inbox"
                                             checked
-                                            onchange="syncChip(this)"
+                                            onchange="
+                                                syncChip(this, 'scope-group')
+                                            "
                                         />
-                                        📥 Inbox
-                                    </label>
-                                    <label class="scope-chip" id="chip-spam">
-                                        <input
+                                        📥 Inbox</label
+                                    >
+                                    <label class="scope-chip" id="chip-spam"
+                                        ><input
                                             type="checkbox"
                                             value="spam"
-                                            onchange="syncChip(this)"
+                                            onchange="
+                                                syncChip(this, 'scope-group')
+                                            "
                                         />
-                                        🚫 Spam
-                                    </label>
+                                        🚫 Spam</label
+                                    >
                                     <label
                                         class="scope-chip danger"
                                         id="chip-trash"
-                                    >
-                                        <input
+                                        ><input
                                             type="checkbox"
                                             value="trash"
-                                            onchange="syncChip(this)"
+                                            onchange="
+                                                syncChip(this, 'scope-group')
+                                            "
                                         />
-                                        🗑️ Trash
-                                    </label>
-                                    <label class="scope-chip" id="chip-sent">
-                                        <input
+                                        🗑️ Trash</label
+                                    >
+                                    <label class="scope-chip" id="chip-sent"
+                                        ><input
                                             type="checkbox"
                                             value="sent"
-                                            onchange="syncChip(this)"
+                                            onchange="
+                                                syncChip(this, 'scope-group')
+                                            "
                                         />
-                                        📤 Sent
-                                    </label>
-                                    <label
-                                        class="scope-chip"
-                                        id="chip-anywhere"
+                                        📤 Sent</label
                                     >
-                                        <input
+                                    <label class="scope-chip" id="chip-anywhere"
+                                        ><input
                                             type="checkbox"
                                             value="anywhere"
-                                            onchange="handleAnywhere(this)"
+                                            onchange="
+                                                handleAnywhere(
+                                                    this,
+                                                    'scope-group',
+                                                )
+                                            "
                                         />
-                                        🌐 Everywhere
-                                    </label>
+                                        🌐 Everywhere</label
+                                    >
                                 </div>
                             </div>
                         </div>
-
-                        <div class="action-strip" style="margin-bottom: 0">
+                        <div class="action-strip">
                             <button class="btn btn-primary" onclick="addRule()">
                                 ＋ Add Rule
                             </button>
                             <button
                                 class="btn btn-ghost"
-                                onclick="testPattern()"
+                                onclick="
+                                    testPattern(
+                                        'r-field',
+                                        'r-pattern',
+                                        'r-flags',
+                                        'scope-group',
+                                        'test-result',
+                                    )
+                                "
                             >
                                 🔍 Test Pattern
                             </button>
@@ -894,15 +989,13 @@
                                 ▶ Run Now
                             </button>
                         </div>
-
                         <div class="test-result" id="test-result"></div>
                     </div>
 
-                    <!-- Rules list -->
                     <div class="section-header">
                         <span class="section-title">Your Rules</span>
                         <span style="font-size: 12px; color: var(--muted)"
-                            >Checked top-to-bottom</span
+                            >Checked top-to-bottom · click ✏️ to edit</span
                         >
                     </div>
                     <div class="rules-list" id="rules-list">
@@ -913,7 +1006,7 @@
                     </div>
                 </div>
 
-                <!-- ===================== SETTINGS PAGE ===================== -->
+                <!-- ========== SETTINGS PAGE ========== -->
                 <div class="page" id="page-settings">
                     <div class="card">
                         <div class="card-title">Auto-run Timer</div>
@@ -925,7 +1018,7 @@
                             "
                         >
                             How often the filter script runs. Changes take
-                            effect immediately and recreate the trigger.
+                            effect immediately.
                         </p>
                         <div class="timer-row" id="timer-row">
                             <button
@@ -975,14 +1068,12 @@
                             <button
                                 class="btn btn-success"
                                 onclick="activateTrigger()"
-                                id="trigger-on-btn"
                             >
                                 ⚡ Activate Auto-run
                             </button>
                             <button
                                 class="btn btn-stop"
                                 onclick="deactivateTrigger()"
-                                id="trigger-off-btn"
                             >
                                 ⏹ Stop Auto-run
                             </button>
@@ -998,31 +1089,25 @@
                             Status: checking…
                         </div>
                     </div>
-
                     <div class="card">
                         <div class="card-title">
-                            Permanently Delete — Setup Required
+                            🔥 Permanently Delete — Setup
                         </div>
                         <p
                             style="
                                 color: var(--muted);
                                 font-size: 13px;
-                                line-height: 1.7;
+                                line-height: 1.8;
                             "
                         >
-                            The
-                            <strong style="color: var(--danger)"
-                                >🔥 Permanently Delete</strong
-                            >
-                            action needs the
+                            Needs
                             <strong style="color: var(--text)"
                                 >Gmail Advanced Service</strong
                             >
-                            enabled in your Apps Script project.<br /><br />
-                            To enable it:<br />
-                            1. In the Apps Script editor, click
+                            enabled:<br />
+                            1. Apps Script editor →
                             <strong style="color: var(--text)">Services</strong>
-                            (＋ icon in the left sidebar)<br />
+                            (＋ icon)<br />
                             2. Find
                             <strong style="color: var(--text)"
                                 >Gmail API</strong
@@ -1030,14 +1115,13 @@
                             → click
                             <strong style="color: var(--text)">Add</strong
                             ><br />
-                            3. That's it — permanent delete will now work.<br /><br />
-                            Without it, the action falls back to
-                            <em>Move to Trash</em> and logs a warning.
+                            Without it the action falls back to Trash and logs
+                            the real error.
                         </p>
                     </div>
                 </div>
 
-                <!-- ===================== LOG PAGE ===================== -->
+                <!-- ========== LOG PAGE ========== -->
                 <div class="page" id="page-log">
                     <div class="section-header">
                         <span class="section-title">Activity Log</span>
@@ -1056,7 +1140,7 @@
                     </div>
                 </div>
 
-                <!-- ===================== GUIDE PAGE ===================== -->
+                <!-- ========== GUIDE PAGE ========== -->
                 <div class="page" id="page-guide">
                     <div class="card">
                         <div class="card-title">Regex Quick Reference</div>
@@ -1124,7 +1208,6 @@
                             </tr>
                         </table>
                     </div>
-
                     <div class="card">
                         <div class="card-title">Templates — click to load</div>
                         <div
@@ -1143,7 +1226,7 @@
                                         'noreply@.*\\.com',
                                         'i',
                                         'trash',
-                                        [],
+                                        '',
                                         'Block all noreply senders',
                                         ['inbox', 'spam'],
                                     )
@@ -1154,17 +1237,13 @@
                                         🗑️ Block all noreply senders
                                     </div>
                                     <div class="rule-meta">
-                                        <span class="pill pill-field"
-                                            >from</span
-                                        >
-                                        <span class="pill pill-pattern"
+                                        <span class="pill pill-field">from</span
+                                        ><span class="pill pill-pattern"
                                             >noreply@.*\.com</span
-                                        >
-                                        <span class="pill pill-action"
+                                        ><span class="pill pill-action"
                                             >trash</span
-                                        >
-                                        <span class="pill pill-scope"
-                                            >inbox + spam</span
+                                        ><span class="pill pill-scope"
+                                            >inbox+spam</span
                                         >
                                     </div>
                                 </div>
@@ -1181,7 +1260,7 @@
                                         'unsubscribe|opt.out',
                                         'i',
                                         'trash',
-                                        [],
+                                        '',
                                         'Trash newsletters',
                                         ['inbox', 'spam'],
                                     )
@@ -1192,17 +1271,13 @@
                                         📦 Trash newsletters
                                     </div>
                                     <div class="rule-meta">
-                                        <span class="pill pill-field"
-                                            >body</span
-                                        >
-                                        <span class="pill pill-pattern"
+                                        <span class="pill pill-field">body</span
+                                        ><span class="pill pill-pattern"
                                             >unsubscribe|opt.out</span
-                                        >
-                                        <span class="pill pill-action"
+                                        ><span class="pill pill-action"
                                             >trash</span
-                                        >
-                                        <span class="pill pill-scope"
-                                            >inbox + spam</span
+                                        ><span class="pill pill-scope"
+                                            >inbox+spam</span
                                         >
                                     </div>
                                 </div>
@@ -1219,7 +1294,7 @@
                                         '\\b(winner|prize|claim now|act fast|free gift)\\b',
                                         'i',
                                         'delete',
-                                        [],
+                                        '',
                                         'Permanently delete obvious spam',
                                         ['inbox', 'spam'],
                                     )
@@ -1232,15 +1307,12 @@
                                     <div class="rule-meta">
                                         <span class="pill pill-field"
                                             >subject</span
-                                        >
-                                        <span class="pill pill-pattern"
-                                            >\b(winner|prize|claim now)\b</span
-                                        >
-                                        <span class="pill pill-action delete"
+                                        ><span class="pill pill-pattern"
+                                            >\b(winner|prize)\b</span
+                                        ><span class="pill pill-action delete"
                                             >delete</span
-                                        >
-                                        <span class="pill pill-scope"
-                                            >inbox + spam</span
+                                        ><span class="pill pill-scope"
+                                            >inbox+spam</span
                                         >
                                     </div>
                                 </div>
@@ -1257,7 +1329,7 @@
                                         '@github\\.com',
                                         'i',
                                         'label',
-                                        ['GitHub'],
+                                        'GitHub',
                                         'Label GitHub notifications',
                                         ['inbox'],
                                     )
@@ -1268,16 +1340,12 @@
                                         🏷️ Label GitHub notifications
                                     </div>
                                     <div class="rule-meta">
-                                        <span class="pill pill-field"
-                                            >from</span
-                                        >
-                                        <span class="pill pill-pattern"
+                                        <span class="pill pill-field">from</span
+                                        ><span class="pill pill-pattern"
                                             >@github\.com</span
-                                        >
-                                        <span class="pill pill-action label"
+                                        ><span class="pill pill-action label"
                                             >label: GitHub</span
-                                        >
-                                        <span class="pill pill-scope"
+                                        ><span class="pill pill-scope"
                                             >inbox</span
                                         >
                                     </div>
@@ -1295,7 +1363,7 @@
                                         'invoice|receipt|order confirmation',
                                         'i',
                                         'archive',
-                                        [],
+                                        '',
                                         'Archive receipts',
                                         ['inbox'],
                                     )
@@ -1308,15 +1376,11 @@
                                     <div class="rule-meta">
                                         <span class="pill pill-field"
                                             >subject</span
-                                        >
-                                        <span class="pill pill-pattern"
-                                            >invoice|receipt|order
-                                            confirmation</span
-                                        >
-                                        <span class="pill pill-action archive"
+                                        ><span class="pill pill-pattern"
+                                            >invoice|receipt</span
+                                        ><span class="pill pill-action archive"
                                             >archive</span
-                                        >
-                                        <span class="pill pill-scope"
+                                        ><span class="pill pill-scope"
                                             >inbox</span
                                         >
                                     </div>
@@ -1331,11 +1395,171 @@
             </main>
         </div>
 
+        <!-- ========== EDIT MODAL ========== -->
+        <div class="modal-overlay" id="edit-modal">
+            <div class="modal">
+                <div class="modal-title">
+                    <span>✏️ Edit Rule</span>
+                    <button class="modal-close" onclick="closeEditModal()">
+                        ✕
+                    </button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Rule Name</label>
+                        <input
+                            type="text"
+                            id="e-name"
+                            placeholder="e.g. Block promo emails"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label>Check Field</label>
+                        <select id="e-field">
+                            <option value="from">From (sender)</option>
+                            <option value="subject">Subject</option>
+                            <option value="body">Body</option>
+                            <option value="to">To (recipient)</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-full">
+                        <label>Pattern (regex)</label>
+                        <input
+                            type="text"
+                            id="e-pattern"
+                            placeholder="e.g. noreply@.*\.com"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label>Flags</label>
+                        <select id="e-flags">
+                            <option value="i">Case insensitive (i)</option>
+                            <option value="">Case sensitive</option>
+                            <option value="im">
+                                Multiline + insensitive (im)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Action</label>
+                        <select
+                            id="e-action"
+                            onchange="toggleLabel('e-label-group', 'e-action')"
+                        >
+                            <option value="trash">🗑️ Move to Trash</option>
+                            <option value="delete">
+                                🔥 Permanently Delete
+                            </option>
+                            <option value="archive">📦 Archive</option>
+                            <option value="label">🏷️ Add Label</option>
+                            <option value="label+archive">
+                                🏷️ Label + Archive
+                            </option>
+                            <option value="trash+label">
+                                🗑️ Trash + Label
+                            </option>
+                            <option value="star">⭐ Star</option>
+                            <option value="markread">✅ Mark as Read</option>
+                        </select>
+                    </div>
+                    <div
+                        class="form-group"
+                        id="e-label-group"
+                        style="display: none"
+                    >
+                        <label>Label Name</label>
+                        <input
+                            type="text"
+                            id="e-label"
+                            placeholder="e.g. Newsletters"
+                        />
+                    </div>
+                    <div class="form-group form-full">
+                        <label>Scan Scope</label>
+                        <div class="scope-group" id="e-scope-group">
+                            <label class="scope-chip" id="e-chip-inbox"
+                                ><input
+                                    type="checkbox"
+                                    value="inbox"
+                                    onchange="syncChip(this, 'e-scope-group')"
+                                />
+                                📥 Inbox</label
+                            >
+                            <label class="scope-chip" id="e-chip-spam"
+                                ><input
+                                    type="checkbox"
+                                    value="spam"
+                                    onchange="syncChip(this, 'e-scope-group')"
+                                />
+                                🚫 Spam</label
+                            >
+                            <label class="scope-chip danger" id="e-chip-trash"
+                                ><input
+                                    type="checkbox"
+                                    value="trash"
+                                    onchange="syncChip(this, 'e-scope-group')"
+                                />
+                                🗑️ Trash</label
+                            >
+                            <label class="scope-chip" id="e-chip-sent"
+                                ><input
+                                    type="checkbox"
+                                    value="sent"
+                                    onchange="syncChip(this, 'e-scope-group')"
+                                />
+                                📤 Sent</label
+                            >
+                            <label class="scope-chip" id="e-chip-anywhere"
+                                ><input
+                                    type="checkbox"
+                                    value="anywhere"
+                                    onchange="
+                                        handleAnywhere(this, 'e-scope-group')
+                                    "
+                                />
+                                🌐 Everywhere</label
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 14px">
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        onclick="
+                            testPattern(
+                                'e-field',
+                                'e-pattern',
+                                'e-flags',
+                                'e-scope-group',
+                                'e-test-result',
+                            )
+                        "
+                    >
+                        🔍 Test Pattern
+                    </button>
+                    <div
+                        class="test-result"
+                        id="e-test-result"
+                        style="margin-top: 10px"
+                    ></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" onclick="closeEditModal()">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="saveEdit()">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="toast" id="toast"></div>
 
         <script>
             var rules = [];
             var currentInterval = 1;
+            var editingRuleId = null;
 
             // ---- nav ----
             function showPage(name) {
@@ -1361,54 +1585,48 @@
                 }, 3200);
             }
 
-            // ---- scope chips ----
-            function syncChip(cb) {
+            // ---- scope chips (generic, works for both add and edit forms) ----
+            function syncChip(cb, groupId) {
                 var chip = cb.closest(".scope-chip");
                 if (cb.checked) chip.classList.add("checked");
-                else chip.classList.remove("checked");
-                // if anywhere unchecked, nothing special; if a specific unchecked, uncheck anywhere
-                if (!cb.checked && cb.value !== "anywhere") {
-                    var anywhereCb = document.querySelector(
-                        "#chip-anywhere input",
-                    );
-                    anywhereCb.checked = false;
-                    document
-                        .getElementById("chip-anywhere")
-                        .classList.remove("checked");
-                }
-            }
-
-            function handleAnywhere(cb) {
-                var chips = document.querySelectorAll(
-                    "#scope-group .scope-chip",
-                );
-                chips.forEach(function (chip) {
-                    var input = chip.querySelector("input");
-                    if (cb.checked) {
-                        input.checked = true;
-                        chip.classList.add("checked");
-                    } else {
-                        if (input.value !== "anywhere") {
-                            input.checked = false;
-                            chip.classList.remove("checked");
-                        } else {
-                            chip.classList.remove("checked");
+                else {
+                    chip.classList.remove("checked");
+                    if (cb.value !== "anywhere") {
+                        // uncheck "everywhere" if a specific one was unchecked
+                        var anyCb = document.querySelector(
+                            "#" + groupId + ' input[value="anywhere"]',
+                        );
+                        if (anyCb) {
+                            anyCb.checked = false;
+                            anyCb
+                                .closest(".scope-chip")
+                                .classList.remove("checked");
                         }
                     }
-                });
-                // re-check inbox as default when unchecking everywhere
-                if (!cb.checked) {
-                    var inboxCb = document.querySelector("#chip-inbox input");
-                    inboxCb.checked = true;
-                    document
-                        .getElementById("chip-inbox")
-                        .classList.add("checked");
                 }
             }
 
-            function getSelectedScope() {
+            function handleAnywhere(cb, groupId) {
+                var group = document.getElementById(groupId);
+                group.querySelectorAll(".scope-chip").forEach(function (chip) {
+                    var input = chip.querySelector("input");
+                    input.checked = cb.checked;
+                    if (cb.checked) chip.classList.add("checked");
+                    else chip.classList.remove("checked");
+                });
+                if (!cb.checked) {
+                    // default back to inbox
+                    var inboxCb = group.querySelector('input[value="inbox"]');
+                    if (inboxCb) {
+                        inboxCb.checked = true;
+                        inboxCb.closest(".scope-chip").classList.add("checked");
+                    }
+                }
+            }
+
+            function getSelectedScope(groupId) {
                 var checks = document.querySelectorAll(
-                    "#scope-group input:checked",
+                    "#" + groupId + " input:checked",
                 );
                 var vals = Array.from(checks).map(function (c) {
                     return c.value;
@@ -1417,11 +1635,9 @@
                 return vals.length ? vals : ["inbox"];
             }
 
-            function setScopeChips(scope) {
-                var chips = document.querySelectorAll(
-                    "#scope-group .scope-chip",
-                );
-                chips.forEach(function (chip) {
+            function setScopeChips(groupId, scope) {
+                var group = document.getElementById(groupId);
+                group.querySelectorAll(".scope-chip").forEach(function (chip) {
                     var input = chip.querySelector("input");
                     var on =
                         scope.indexOf(input.value) !== -1 ||
@@ -1432,14 +1648,14 @@
                 });
             }
 
-            // ---- label field toggle ----
-            function toggleLabel() {
-                var action = document.getElementById("r-action").value;
+            // ---- label toggle (generic) ----
+            function toggleLabel(labelGroupId, actionSelectId) {
+                var action = document.getElementById(actionSelectId).value;
                 var show =
                     action === "label" ||
                     action === "label+archive" ||
                     action === "trash+label";
-                document.getElementById("label-group").style.display = show
+                document.getElementById(labelGroupId).style.display = show
                     ? "block"
                     : "none";
             }
@@ -1453,20 +1669,17 @@
                         document.getElementById("stat-active").textContent =
                             s.activeRules;
                         document.getElementById("stat-log").textContent =
-                            s.totalActions;
+                            s.recentActions;
                         currentInterval = s.intervalMinutes || 1;
 
                         var badge = document.getElementById("trigger-badge");
                         var text = document.getElementById("trigger-text");
-                        if (s.triggerActive) {
-                            badge.className = "trigger-badge on";
-                            text.textContent = s.triggerLabel;
-                        } else {
-                            badge.className = "trigger-badge off";
-                            text.textContent = "Inactive";
-                        }
+                        badge.className =
+                            "trigger-badge " + (s.triggerActive ? "on" : "off");
+                        text.textContent = s.triggerActive
+                            ? s.triggerLabel
+                            : "Inactive";
 
-                        // highlight active timer button
                         document
                             .querySelectorAll(".timer-btn")
                             .forEach(function (btn) {
@@ -1503,7 +1716,7 @@
             function scopeLabel(scope) {
                 if (!scope || !scope.length) return "inbox";
                 if (scope.indexOf("anywhere") !== -1) return "everywhere";
-                return scope.join(" + ");
+                return scope.join("+");
             }
 
             function renderRules() {
@@ -1534,6 +1747,8 @@
                         return [
                             '<div class="rule-card ' +
                                 (disabled ? "disabled" : "") +
+                                '" id="rc-' +
+                                r.id +
                                 '">',
                             '<input type="checkbox" class="rule-toggle" ' +
                                 (disabled ? "" : "checked") +
@@ -1568,6 +1783,9 @@
                             "</div>",
                             "</div>",
                             '<div class="rule-actions">',
+                            '<button class="btn btn-ghost btn-sm" onclick="openEditModal(\'' +
+                                r.id +
+                                "')\">✏️ Edit</button>",
                             '<button class="btn btn-danger btn-sm" onclick="deleteRule(\'' +
                                 r.id +
                                 "')\">Delete</button>",
@@ -1594,7 +1812,7 @@
                 var flags = document.getElementById("r-flags").value;
                 var action = document.getElementById("r-action").value;
                 var label = document.getElementById("r-label").value.trim();
-                var scope = getSelectedScope();
+                var scope = getSelectedScope("scope-group");
 
                 if (!pattern) {
                     toast("Enter a pattern first", "error");
@@ -1616,16 +1834,6 @@
                     return;
                 }
 
-                var rule = {
-                    name: name || pattern,
-                    field: field,
-                    pattern: pattern,
-                    flags: flags,
-                    action: action,
-                    label: label,
-                    scope: scope,
-                };
-
                 google.script.run
                     .withSuccessHandler(function (saved) {
                         rules.push(saved);
@@ -1642,8 +1850,111 @@
                     .withFailureHandler(function (e) {
                         toast("Error: " + e.message, "error");
                     })
-                    .addRule(rule);
+                    .addRule({
+                        name: name || pattern,
+                        field: field,
+                        pattern: pattern,
+                        flags: flags,
+                        action: action,
+                        label: label,
+                        scope: scope,
+                    });
             }
+
+            // ---- edit modal ----
+            function openEditModal(id) {
+                var rule = rules.find(function (r) {
+                    return r.id === id;
+                });
+                if (!rule) return;
+                editingRuleId = id;
+
+                document.getElementById("e-name").value = rule.name || "";
+                document.getElementById("e-field").value = rule.field || "from";
+                document.getElementById("e-pattern").value = rule.pattern || "";
+                document.getElementById("e-flags").value = rule.flags || "i";
+                document.getElementById("e-action").value =
+                    rule.action || "trash";
+                document.getElementById("e-label").value = rule.label || "";
+                toggleLabel("e-label-group", "e-action");
+                setScopeChips("e-scope-group", rule.scope || ["inbox"]);
+
+                document
+                    .getElementById("e-test-result")
+                    .classList.remove("show");
+                document.getElementById("edit-modal").classList.add("open");
+            }
+
+            function closeEditModal() {
+                document.getElementById("edit-modal").classList.remove("open");
+                editingRuleId = null;
+            }
+
+            function saveEdit() {
+                if (!editingRuleId) return;
+
+                var pattern = document.getElementById("e-pattern").value.trim();
+                var flags = document.getElementById("e-flags").value;
+                var action = document.getElementById("e-action").value;
+                var label = document.getElementById("e-label").value.trim();
+
+                if (!pattern) {
+                    toast("Pattern cannot be empty", "error");
+                    return;
+                }
+                try {
+                    new RegExp(pattern, flags);
+                } catch (e) {
+                    toast("Invalid regex: " + e.message, "error");
+                    return;
+                }
+                if (
+                    (action === "label" ||
+                        action === "label+archive" ||
+                        action === "trash+label") &&
+                    !label
+                ) {
+                    toast("Enter a label name", "error");
+                    return;
+                }
+
+                var updated = {
+                    id: editingRuleId,
+                    name:
+                        document.getElementById("e-name").value.trim() ||
+                        pattern,
+                    field: document.getElementById("e-field").value,
+                    pattern: pattern,
+                    flags: flags,
+                    action: action,
+                    label: label,
+                    scope: getSelectedScope("e-scope-group"),
+                };
+
+                google.script.run
+                    .withSuccessHandler(function () {
+                        rules = rules.map(function (r) {
+                            return r.id === editingRuleId
+                                ? Object.assign({}, r, updated)
+                                : r;
+                        });
+                        renderRules();
+                        loadStats();
+                        closeEditModal();
+                        toast("Rule updated ✓", "success");
+                    })
+                    .withFailureHandler(function (e) {
+                        toast("Error: " + e.message, "error");
+                    })
+                    .updateRule(updated);
+            }
+
+            // close modal on overlay click
+            document
+                .getElementById("edit-modal")
+                .addEventListener("click", function (e) {
+                    if (e.target === this) closeEditModal();
+                });
 
             // ---- delete / toggle ----
             function deleteRule(id) {
@@ -1673,13 +1984,19 @@
                     .toggleRule(id);
             }
 
-            // ---- test pattern ----
-            function testPattern() {
-                var field = document.getElementById("r-field").value;
-                var pattern = document.getElementById("r-pattern").value.trim();
-                var flags = document.getElementById("r-flags").value;
-                var scope = getSelectedScope();
-                var resEl = document.getElementById("test-result");
+            // ---- test pattern (generic — works for both add and edit forms) ----
+            function testPattern(
+                fieldId,
+                patternId,
+                flagsId,
+                scopeGroupId,
+                resultId,
+            ) {
+                var field = document.getElementById(fieldId).value;
+                var pattern = document.getElementById(patternId).value.trim();
+                var flags = document.getElementById(flagsId).value;
+                var scope = getSelectedScope(scopeGroupId);
+                var resEl = document.getElementById(resultId);
 
                 if (!pattern) {
                     toast("Enter a pattern first", "error");
@@ -1693,7 +2010,7 @@
                 }
 
                 resEl.innerHTML =
-                    '<span class="spin"></span> Testing across selected scopes…';
+                    '<span class="spin"></span> Testing across selected scopes (all messages in threads)…';
                 resEl.classList.add("show");
 
                 google.script.run
@@ -1716,11 +2033,19 @@
                             " match(es) found:</div>" +
                             res.matches
                                 .map(function (m) {
+                                    var d = new Date(m.date);
                                     return (
                                         '<div class="test-match"><div class="test-match-from">' +
                                         esc(m.from) +
                                         '</div><div class="test-match-subject">' +
                                         esc(m.subject) +
+                                        '</div><div class="test-match-date">' +
+                                        d.toLocaleDateString() +
+                                        " " +
+                                        d.toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        }) +
                                         "</div></div>"
                                     );
                                 })
@@ -1785,16 +2110,12 @@
 
             // ---- trigger on/off ----
             function activateTrigger() {
-                var btn = document.getElementById("trigger-on-btn");
-                btn.disabled = true;
                 google.script.run
                     .withSuccessHandler(function () {
-                        btn.disabled = false;
                         toast("Auto-run activated ✓", "success");
                         loadStats();
                     })
                     .withFailureHandler(function (e) {
-                        btn.disabled = false;
                         toast("Error: " + e.message, "error");
                     })
                     .activateTrigger();
@@ -1878,7 +2199,7 @@
                 pattern,
                 flags,
                 action,
-                labelArr,
+                label,
                 name,
                 scope,
             ) {
@@ -1887,10 +2208,9 @@
                 document.getElementById("r-flags").value = flags;
                 document.getElementById("r-action").value = action;
                 document.getElementById("r-name").value = name || "";
-                document.getElementById("r-label").value =
-                    labelArr && labelArr[0] ? labelArr[0] : "";
-                toggleLabel();
-                setScopeChips(scope || ["inbox"]);
+                document.getElementById("r-label").value = label || "";
+                toggleLabel("r-label-group", "r-action");
+                setScopeChips("scope-group", scope || ["inbox"]);
                 showPage("rules");
                 toast("Template loaded — review and click Add Rule", "info");
                 document.getElementById("r-pattern").focus();
