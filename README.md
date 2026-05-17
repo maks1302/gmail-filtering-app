@@ -19,7 +19,7 @@ You create rules in the UI.
 
 Each rule can contain one or more conditions, for example:
 
-- `From` exactly matches `canopy.ua@gmail.com`
+- `From` exactly matches `example.us@gmail.com`
 - `Body` regex matches `\blet me in\b`
 
 When a message matches a rule, the selected action is applied to that message.
@@ -78,7 +78,7 @@ Case options:
 
 Exact sender plus exact phrase:
 
-- `From` → `Exact` → `canopy.ua@gmail.com`
+- `From` → `Exact` → `example.us@gmail.com`
 - `Body` → `Exact` → `let me in`
 - Logic: `AND`
 
