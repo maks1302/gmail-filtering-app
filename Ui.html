@@ -1621,7 +1621,9 @@
                                         font-weight: 600;
                                         margin-bottom: 6px;
                                     "
-                                >🧭 Exact vs Regex</div>
+                                >
+                                    🧭 Exact vs Regex
+                                </div>
                                 <div style="color: var(--muted)">
                                     Every condition starts in
                                     <strong>Exact</strong> mode. Turn on the
@@ -1774,7 +1776,7 @@
                             </tr>
                             <tr>
                                 <td>Exact</td>
-                                <td class="mono">canopy.ua@gmail.com</td>
+                                <td class="mono">example.us@gmail.com</td>
                                 <td>Exact sender email</td>
                                 <td style="color: var(--muted)">
                                     Safe default for From / To
@@ -2226,7 +2228,7 @@
                     '">' +
                     '<input type="checkbox" class="cond-mode-toggle" ' +
                     (regexOn ? "checked" : "") +
-                    ' onchange="checkPatternHint(this.closest(\'.condition-row\').querySelector(\'.cond-pattern\'),\'' +
+                    " onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
                     "')\">" +
                     "<span>Regex</span>" +
@@ -2765,7 +2767,11 @@
                                             c.field +
                                             "</span>" +
                                             '<span class="pill pill-scope" style="font-size:10px;">' +
-                                            esc((c.mode || "exact").toUpperCase()) +
+                                            esc(
+                                                (
+                                                    c.mode || "exact"
+                                                ).toUpperCase(),
+                                            ) +
                                             "</span>" +
                                             '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                             esc(c.pattern) +
