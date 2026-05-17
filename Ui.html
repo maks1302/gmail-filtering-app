@@ -350,20 +350,59 @@
             }
             .condition-row {
                 display: flex;
-                align-items: center;
+                flex-direction: column;
                 gap: 8px;
                 background: var(--bg3);
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 padding: 10px 12px;
             }
-            .condition-row select {
+            .condition-main {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+            }
+            .condition-main select {
                 flex: 1;
                 min-width: 80px;
             }
-            .condition-row input {
+            .condition-main input {
                 flex: 2;
                 min-width: 100px;
+            }
+            .condition-pattern-wrap {
+                flex: 2;
+                min-width: 100px;
+            }
+            .regex-check {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                cursor: pointer;
+                user-select: none;
+                flex-shrink: 0;
+            }
+            .regex-check input {
+                width: 14px;
+                height: 14px;
+                accent-color: var(--warning);
+                cursor: pointer;
+                flex: 0 0 auto;
+            }
+            .regex-check span {
+                display: inline-block;
+                line-height: 1;
+            }
+            .regex-check.on {
+                color: var(--text);
+            }
+            .cond-flags:disabled {
+                opacity: 0.45;
             }
             .condition-badge {
                 font-size: 10px;
@@ -1572,17 +1611,12 @@
                                         font-weight: 600;
                                         margin-bottom: 6px;
                                     "
-                                >
-                                    ✉️ Exact emails vs regex
-                                </div>
+                                >🧭 Exact vs Regex</div>
                                 <div style="color: var(--muted)">
-                                    In <strong>From</strong> and
-                                    <strong>To</strong>, a plain email like
-                                    <span class="mono"
-                                        >example.us@gmail.com</span
-                                    >
-                                    now matches that exact address
-                                    <strong>literally</strong>.
+                                    Every condition starts in
+                                    <strong>Exact</strong> mode. Turn on the
+                                    <strong>Regex</strong> toggle only when you
+                                    want pattern matching.
                                 </div>
                                 <div
                                     style="
@@ -1600,11 +1634,20 @@
                                                 margin-bottom: 3px;
                                             "
                                         >
-                                            ✓ Exact match
+                                            ✓ Exact mode
                                         </div>
                                         <span class="mono"
                                             >example.us@gmail.com</span
                                         >
+                                        <div
+                                            style="
+                                                color: var(--muted);
+                                                font-size: 11px;
+                                                margin-top: 3px;
+                                            "
+                                        >
+                                            From matches this exact sender
+                                        </div>
                                     </div>
                                     <div>
                                         <div
@@ -1614,9 +1657,39 @@
                                                 margin-bottom: 3px;
                                             "
                                         >
-                                            ✓ Regex match
+                                            ✓ Regex mode
                                         </div>
                                         <span class="mono">.*@gmail\.com</span>
+                                        <div
+                                            style="
+                                                color: var(--muted);
+                                                font-size: 11px;
+                                                margin-top: 3px;
+                                            "
+                                        >
+                                            From matches any Gmail sender
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div
+                                            style="
+                                                color: var(--success);
+                                                font-size: 11px;
+                                                margin-bottom: 3px;
+                                            "
+                                        >
+                                            ✓ Body regex
+                                        </div>
+                                        <span class="mono">\blet me in\b</span>
+                                        <div
+                                            style="
+                                                color: var(--muted);
+                                                font-size: 11px;
+                                                margin-top: 3px;
+                                            "
+                                        >
+                                            Body matches the whole phrase only
+                                        </div>
                                     </div>
                                 </div>
                                 <div
@@ -1626,9 +1699,12 @@
                                         font-size: 12px;
                                     "
                                 >
-                                    Only escape dots like
-                                    <span class="mono">\.</span> when you are
-                                    intentionally writing regex.
+                                    In <strong>Regex</strong> mode,
+                                    <span class="mono">.</span> means any
+                                    character and <span class="mono">\.</span>
+                                    means a literal dot. In
+                                    <strong>Exact</strong> mode, text is matched
+                                    literally.
                                 </div>
                             </div>
                             <div
@@ -1670,21 +1746,32 @@
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-title">Regex Quick Reference</div>
+                        <div class="card-title">Pattern Guide</div>
                         <table class="guide-table">
                             <tr>
+                                <th>Mode</th>
                                 <th>Pattern</th>
                                 <th>Meaning</th>
                                 <th>Example</th>
                             </tr>
                             <tr>
+                                <td>Exact</td>
                                 <td class="mono">hello</td>
-                                <td>Contains "hello"</td>
+                                <td>Literal text match</td>
                                 <td style="color: var(--muted)">
-                                    Matches "say hello world"
+                                    Good for simple subject/body phrases
                                 </td>
                             </tr>
                             <tr>
+                                <td>Exact</td>
+                                <td class="mono">canopy.ua@gmail.com</td>
+                                <td>Exact sender email</td>
+                                <td style="color: var(--muted)">
+                                    Safe default for From / To
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Regex</td>
                                 <td class="mono">\bhello\b</td>
                                 <td>Whole word only</td>
                                 <td style="color: var(--muted)">
@@ -1692,6 +1779,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">sale|promo|deal</td>
                                 <td>OR — any of these</td>
                                 <td style="color: var(--muted)">
@@ -1699,6 +1787,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">@domain\.com</td>
                                 <td>Literal domain in regex</td>
                                 <td style="color: var(--muted)">
@@ -1706,6 +1795,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">.*@gmail\.com</td>
                                 <td>Any Gmail sender</td>
                                 <td style="color: var(--muted)">
@@ -1713,6 +1803,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">
                                     ^.*&lt;ceo@company\.com&gt;$
                                 </td>
@@ -1722,6 +1813,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">^hello</td>
                                 <td>Starts with</td>
                                 <td style="color: var(--muted)">
@@ -1729,6 +1821,7 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Regex</td>
                                 <td class="mono">hello$</td>
                                 <td>Ends with</td>
                                 <td style="color: var(--muted)">
@@ -1972,33 +2065,48 @@
             }
 
             // ---- pattern helper ----
+            function syncConditionModeUI(row) {
+                if (!row) return;
+                var toggle = row.querySelector(".cond-mode-toggle");
+                var wrap = row.querySelector(".regex-check");
+                var flags = row.querySelector(".cond-flags");
+                var on = toggle && toggle.checked;
+                if (wrap) wrap.classList.toggle("on", !!on);
+                if (flags) flags.disabled = !on;
+            }
+
             function checkPatternHint(input, warnId) {
                 var val = input.value.trim();
                 var el = document.getElementById(warnId);
                 if (!el) return;
 
                 var row = input.closest(".condition-row");
+                syncConditionModeUI(row);
                 var field = row ? row.querySelector(".cond-field").value : "";
-                var looksLikePlainEmail =
-                    /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(val);
-                var looksRegexLike =
-                    /[\\^$*+?()[\]{}|]/.test(val) ||
-                    (val.indexOf("@") !== -1 && /(?<!\\)\./.test(val));
+                var regexOn = row
+                    ? row.querySelector(".cond-mode-toggle").checked
+                    : false;
+                var hasEmail = val.indexOf("@") !== -1;
+                var hasUnescapedDot = /(?<!\\)\./.test(val);
 
-                if (
-                    (field === "from" || field === "to") &&
-                    looksLikePlainEmail
-                ) {
+                if (!regexOn && val) {
                     el.innerHTML =
-                        "ℹ️ Plain email detected — this will match <strong>exactly</strong>. Use regex like <strong>.*@gmail\\\\.com</strong> only when you want pattern matching.";
+                        field === "from" || field === "to"
+                            ? "ℹ️ <strong>Exact</strong> is on. This matches the email text literally."
+                            : "ℹ️ <strong>Exact</strong> is on. This matches plain text exactly as written.";
                     el.classList.add("show");
                 } else if (
+                    regexOn &&
                     (field === "from" || field === "to") &&
-                    val.indexOf("@") !== -1 &&
-                    looksRegexLike
+                    hasEmail &&
+                    hasUnescapedDot
                 ) {
                     el.innerHTML =
-                        "ℹ️ Regex mode — escape literal dots with <strong>\\\\.</strong> in email parts, for example <strong>.*@gmail\\\\.com</strong>.";
+                        "ℹ️ <strong>Regex</strong> is on. Escape literal dots with <strong>\\\\.</strong>, for example <strong>.*@gmail\\\\.com</strong>.";
+                    el.classList.add("show");
+                } else if (regexOn) {
+                    el.innerHTML =
+                        "ℹ️ <strong>Regex</strong> is on. Normal regex rules apply, for example <strong>sale|promo|deal</strong> or <strong>\\bhello\\b</strong>.";
                     el.classList.add("show");
                 } else {
                     el.classList.remove("show");
@@ -2066,28 +2174,39 @@
 
                 var warnId = prefix + "-warn-" + idx;
                 var pattern = esc(cond ? cond.pattern : "");
+                var regexOn = cond && cond.mode === "regex";
 
                 return (
                     '<div class="condition-row" data-idx="' +
                     idx +
                     '">' +
+                    '<div class="condition-main">' +
                     badge +
                     "<select class=\"cond-field\" style=\"max-width:100px;\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
                     "')\">" +
                     fieldOpts +
                     "</select>" +
-                    '<div style="flex:2;min-width:100px;display:flex;flex-direction:column;gap:4px;">' +
+                    '<div class="condition-pattern-wrap">' +
                     '<input type="text" class="cond-pattern" placeholder="pattern" value="' +
                     pattern +
                     '" oninput="checkPatternHint(this,\'' +
                     warnId +
                     "')\">" +
-                    '<div class="warn-box" id="' +
-                    warnId +
-                    '"></div>' +
                     "</div>" +
-                    "<select class=\"cond-flags\" style=\"max-width:90px;\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
+                    '<label class="regex-check' +
+                    (regexOn ? " on" : "") +
+                    '">' +
+                    '<input type="checkbox" class="cond-mode-toggle" ' +
+                    (regexOn ? "checked" : "") +
+                    ' onchange="checkPatternHint(this.closest(\'.condition-row\').querySelector(\'.cond-pattern\'),\'' +
+                    warnId +
+                    "')\">" +
+                    "<span>Regex</span>" +
+                    "</label>" +
+                    "<select class=\"cond-flags\" style=\"max-width:90px;\" " +
+                    (regexOn ? "" : "disabled ") +
+                    "onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
                     "')\">" +
                     flagOpts +
@@ -2095,6 +2214,10 @@
                     '<button class="condition-remove" onclick="removeConditionRow(this,\'' +
                     prefix +
                     '\')" title="Remove">×</button>' +
+                    "</div>" +
+                    '<div class="warn-box" id="' +
+                    warnId +
+                    '"></div>' +
                     "</div>"
                 );
             }
@@ -2169,6 +2292,9 @@
                 return Array.from(rows).map(function (row) {
                     return {
                         field: row.querySelector(".cond-field").value,
+                        mode: row.querySelector(".cond-mode-toggle").checked
+                            ? "regex"
+                            : "exact",
                         pattern: row
                             .querySelector(".cond-pattern")
                             .value.trim(),
@@ -2181,15 +2307,17 @@
                 for (var i = 0; i < conds.length; i++) {
                     if (!conds[i].pattern)
                         return "Condition " + (i + 1) + " has an empty pattern";
-                    try {
-                        new RegExp(conds[i].pattern, conds[i].flags);
-                    } catch (e) {
-                        return (
-                            "Condition " +
-                            (i + 1) +
-                            ": invalid regex — " +
-                            e.message
-                        );
+                    if (conds[i].mode === "regex") {
+                        try {
+                            new RegExp(conds[i].pattern, conds[i].flags);
+                        } catch (e) {
+                            return (
+                                "Condition " +
+                                (i + 1) +
+                                ": invalid regex — " +
+                                e.message
+                            );
+                        }
                     }
                 }
                 return null;
@@ -2364,6 +2492,8 @@
                                     c.field +
                                     '</span><span class="pill pill-pattern">' +
                                     esc(c.pattern) +
+                                    '</span><span class="pill pill-scope">' +
+                                    esc((c.mode || "exact").toUpperCase()) +
                                     "</span></div>"
                                 );
                             })
@@ -2606,6 +2736,9 @@
                                             "</span>" +
                                             '<span class="pill pill-field" style="font-size:10px;">' +
                                             c.field +
+                                            "</span>" +
+                                            '<span class="pill pill-scope" style="font-size:10px;">' +
+                                            esc((c.mode || "exact").toUpperCase()) +
                                             "</span>" +
                                             '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                             esc(c.pattern) +
@@ -2893,6 +3026,13 @@
                                                 '<span class="pill pill-field" style="font-size:10px;">' +
                                                 c.field +
                                                 "</span>" +
+                                                '<span class="pill pill-scope" style="font-size:10px;">' +
+                                                esc(
+                                                    (
+                                                        c.mode || "exact"
+                                                    ).toUpperCase(),
+                                                ) +
+                                                "</span>" +
                                                 '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                                 esc(c.pattern) +
                                                 "</span></div>" +
@@ -3065,6 +3205,13 @@
                                                     "</span>" +
                                                     '<span class="pill pill-field" style="font-size:10px;">' +
                                                     esc(c.field) +
+                                                    "</span>" +
+                                                    '<span class="pill pill-scope" style="font-size:10px;">' +
+                                                    esc(
+                                                        (
+                                                            c.mode || "exact"
+                                                        ).toUpperCase(),
+                                                    ) +
                                                     "</span>" +
                                                     '<span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
                                                     esc(c.pattern) +

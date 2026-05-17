@@ -55,7 +55,7 @@ function updateInterval(minutes) {
 // ------------------------------------------------------------
 function getRules() {
   var raw = PropertiesService.getUserProperties().getProperty(RULES_KEY);
-  return raw ? JSON.parse(raw) : [];
+  return (raw ? JSON.parse(raw) : []).map(normalizeRule);
 }
 
 function saveRules(rules) {
@@ -68,6 +68,7 @@ function saveRules(rules) {
 
 function addRule(rule) {
   var rules = getRules();
+  rule = normalizeRule(rule);
   rule.id = Utilities.getUuid();
   rule.createdAt = new Date().toISOString();
   rule.hits = 0;
@@ -83,6 +84,7 @@ function addRule(rule) {
 
 function updateRule(updated) {
   var rules = getRules();
+  updated = normalizeRule(updated);
   var found = false;
   rules = rules.map(function (r) {
     if (r.id !== updated.id) return r;
@@ -238,11 +240,12 @@ function buildScopeQuery(scope) {
 function evaluateConditions(msg, rule) {
   var condResults = (rule.conditions || []).map(function (cond) {
     var actualValue = getFieldValue(msg, cond.field);
-    var matched = matchCondition(actualValue, cond, msg);
+    var matched = matchCondition(actualValue, cond);
     return {
       field: cond.field,
       pattern: cond.pattern,
       flags: cond.flags || "i",
+      mode: cond.mode || "exact",
       matched: matched,
       actualValue: makeSnippet(actualValue, 120),
     };
@@ -399,6 +402,7 @@ function runFilters() {
                   field: c.field,
                   pattern: c.pattern,
                   flags: c.flags,
+                  mode: c.mode,
                   matched: c.matched,
                   actualValue: c.actualValue,
                 };
@@ -455,21 +459,23 @@ function getFieldValue(msg, field) {
   }
 }
 
-function extractEmailAddresses(value) {
-  var matches = String(value || "").match(
-    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-  );
-  return matches
-    ? matches.map(function (email) {
-        return email.toLowerCase();
-      })
-    : [];
+function normalizeCondition(cond) {
+  cond = cond || {};
+  return {
+    field: cond.field || "subject",
+    pattern: String(cond.pattern || ""),
+    flags: typeof cond.flags === "string" ? cond.flags : "i",
+    mode: cond.mode === "regex" ? "regex" : "exact",
+  };
 }
 
-function looksLikeLiteralEmailPattern(pattern) {
-  return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(
-    String(pattern || "").trim(),
-  );
+function normalizeRule(rule) {
+  rule = rule || {};
+  return Object.assign({}, rule, {
+    logic: rule.logic || "AND",
+    scope: rule.scope && rule.scope.length ? rule.scope : ["inbox"],
+    conditions: (rule.conditions || []).map(normalizeCondition),
+  });
 }
 
 function makeSnippet(value, limit) {
@@ -479,22 +485,18 @@ function makeSnippet(value, limit) {
     .substring(0, limit || 120);
 }
 
+function escapeRegexLiteral(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function matchCondition(actualValue, cond) {
   var pattern = String(cond.pattern || "");
   var flags = cond.flags || "i";
-  var field = cond.field;
-
-  if (
-    (field === "from" || field === "to") &&
-    looksLikeLiteralEmailPattern(pattern)
-  ) {
-    var expected = pattern.toLowerCase();
-    return extractEmailAddresses(actualValue).some(function (email) {
-      return email === expected;
-    });
-  }
-
-  var regex = new RegExp(pattern, flags);
+  var mode = cond.mode || "exact";
+  var regex = new RegExp(
+    mode === "regex" ? pattern : escapeRegexLiteral(pattern),
+    flags,
+  );
   return regex.test(String(actualValue || ""));
 }
 
@@ -517,6 +519,7 @@ function normalizeLogEntry(entry, ruleMap) {
         field: cond.field || "",
         pattern: cond.pattern || "",
         flags: cond.flags || "i",
+        mode: cond.mode || "exact",
         matched: cond.matched === true,
         actualValue: cond.actualValue || "",
       };
