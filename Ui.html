@@ -19,6 +19,7 @@
                 --success: #34d399;
                 --warning: #fbbf24;
                 --radius: 10px;
+                --sidebar: 224px;
             }
             * {
                 box-sizing: border-box;
@@ -33,14 +34,14 @@
                 font-size: 14px;
             }
 
+            /* ---- LAYOUT ---- */
             .shell {
                 display: flex;
                 min-height: 100vh;
             }
 
-            /* sidebar */
             .sidebar {
-                width: 224px;
+                width: var(--sidebar);
                 min-height: 100vh;
                 background: var(--bg2);
                 border-right: 1px solid var(--border);
@@ -51,7 +52,114 @@
                 top: 0;
                 left: 0;
                 bottom: 0;
+                z-index: 50;
+                transition: transform 0.25s ease;
             }
+            .main {
+                margin-left: var(--sidebar);
+                flex: 1;
+                padding: 28px 32px;
+                max-width: 900px;
+            }
+
+            /* ---- MOBILE ---- */
+            @media (max-width: 700px) {
+                .sidebar {
+                    transform: translateX(-100%);
+                }
+                .sidebar.open {
+                    transform: translateX(0);
+                    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+                }
+                .main {
+                    margin-left: 0;
+                    padding: 16px;
+                }
+                .stats-row {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .form-grid {
+                    grid-template-columns: 1fr;
+                }
+                .log-entry {
+                    grid-template-columns: 1fr;
+                    gap: 4px;
+                }
+                .log-time-action {
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
+                .hamburger {
+                    display: flex !important;
+                }
+                .modal {
+                    width: calc(100vw - 24px);
+                }
+                .topbar {
+                    display: flex !important;
+                }
+                .condition-row {
+                    flex-wrap: wrap;
+                }
+            }
+
+            /* ---- TOPBAR (mobile only) ---- */
+            .topbar {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 52px;
+                background: var(--bg2);
+                border-bottom: 1px solid var(--border);
+                align-items: center;
+                padding: 0 16px;
+                gap: 12px;
+                z-index: 40;
+            }
+            .topbar-title {
+                font-size: 15px;
+                font-weight: 600;
+            }
+            .hamburger {
+                display: none;
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--text);
+                padding: 4px;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .hamburger span {
+                display: block;
+                width: 20px;
+                height: 2px;
+                background: var(--text);
+                border-radius: 2px;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 45;
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+
+            /* add top padding on mobile for fixed topbar */
+            @media (max-width: 700px) {
+                body {
+                    padding-top: 52px;
+                }
+            }
+
+            /* ---- SIDEBAR ---- */
             .logo {
                 display: flex;
                 align-items: center;
@@ -132,13 +240,7 @@
                 background: currentColor;
             }
 
-            /* main */
-            .main {
-                margin-left: 224px;
-                flex: 1;
-                padding: 30px 34px;
-                max-width: 880px;
-            }
+            /* ---- PAGE ---- */
             .page {
                 display: none;
             }
@@ -146,7 +248,7 @@
                 display: block;
             }
 
-            /* stats */
+            /* ---- STATS ---- */
             .stats-row {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -173,7 +275,7 @@
                 letter-spacing: -0.5px;
             }
 
-            /* cards */
+            /* ---- CARD ---- */
             .card {
                 background: var(--bg2);
                 border: 1px solid var(--border);
@@ -188,12 +290,9 @@
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 margin-bottom: 18px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
             }
 
-            /* form */
+            /* ---- FORM ---- */
             .form-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -208,7 +307,7 @@
                 flex-direction: column;
                 gap: 5px;
             }
-            label {
+            label.field-label {
                 font-size: 11px;
                 color: var(--muted);
                 font-weight: 600;
@@ -239,7 +338,114 @@
                 background: var(--bg2);
             }
 
-            /* scope chips */
+            /* ---- CONDITIONS ---- */
+            .conditions-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .condition-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 12px;
+                position: relative;
+            }
+            .condition-row select {
+                flex: 1;
+                min-width: 80px;
+            }
+            .condition-row input {
+                flex: 2;
+                min-width: 120px;
+            }
+            .condition-badge {
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 7px;
+                border-radius: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            .badge-and {
+                background: rgba(79, 124, 255, 0.15);
+                color: #7fa6ff;
+            }
+            .badge-or {
+                background: rgba(251, 191, 36, 0.15);
+                color: var(--warning);
+            }
+
+            .condition-remove {
+                background: none;
+                border: none;
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 16px;
+                padding: 0 2px;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+            .condition-remove:hover {
+                color: var(--danger);
+            }
+
+            .logic-toggle {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 10px;
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .logic-btn {
+                padding: 4px 12px;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+                background: var(--bg3);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .logic-btn.active-and {
+                border-color: var(--accent);
+                color: var(--accent);
+                background: rgba(79, 124, 255, 0.1);
+            }
+            .logic-btn.active-or {
+                border-color: var(--warning);
+                color: var(--warning);
+                background: rgba(251, 191, 36, 0.1);
+            }
+
+            .add-condition-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 12px;
+                color: var(--accent);
+                background: rgba(79, 124, 255, 0.08);
+                border: 1px dashed rgba(79, 124, 255, 0.4);
+                border-radius: 7px;
+                padding: 7px 14px;
+                cursor: pointer;
+                transition: all 0.15s;
+                font-family: inherit;
+            }
+            .add-condition-btn:hover {
+                background: rgba(79, 124, 255, 0.15);
+            }
+
+            /* ---- SCOPE CHIPS ---- */
             .scope-group {
                 display: flex;
                 flex-wrap: wrap;
@@ -274,12 +480,11 @@
                 background: rgba(255, 79, 106, 0.1);
             }
 
-            /* timer */
+            /* ---- TIMER ---- */
             .timer-row {
                 display: flex;
-                align-items: center;
-                gap: 10px;
                 flex-wrap: wrap;
+                gap: 10px;
             }
             .timer-btn {
                 padding: 6px 14px;
@@ -302,14 +507,7 @@
                 background: rgba(79, 124, 255, 0.1);
             }
 
-            /* action strip */
-            .action-strip {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-
-            /* buttons */
+            /* ---- BUTTONS ---- */
             .btn {
                 display: inline-flex;
                 align-items: center;
@@ -351,17 +549,6 @@
                 background: var(--success);
                 color: #0a1a12;
             }
-            .btn-success:hover {
-                opacity: 0.9;
-            }
-            .btn-warning {
-                background: transparent;
-                color: var(--warning);
-                border: 1px solid rgba(251, 191, 36, 0.3);
-            }
-            .btn-warning:hover {
-                background: rgba(251, 191, 36, 0.1);
-            }
             .btn-stop {
                 background: transparent;
                 color: var(--warning);
@@ -374,25 +561,51 @@
                 padding: 5px 10px;
                 font-size: 12px;
             }
+            .btn-xs {
+                padding: 3px 8px;
+                font-size: 11px;
+            }
             .btn:disabled {
                 opacity: 0.4;
                 cursor: not-allowed;
             }
+            .action-strip {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
 
-            /* rules list */
+            /* ---- SECTION HEADER ---- */
+            .section-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                margin-bottom: 14px;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .section-title {
+                font-size: 15px;
+                font-weight: 600;
+            }
+            .section-note {
+                font-size: 12px;
+                color: var(--muted);
+                line-height: 1.5;
+            }
+
+            /* ---- RULE CARDS ---- */
             .rules-list {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
+
             .rule-card {
                 background: var(--bg2);
                 border: 1px solid var(--border);
                 border-radius: var(--radius);
                 padding: 15px 17px;
-                display: flex;
-                align-items: flex-start;
-                gap: 13px;
                 transition: border-color 0.15s;
             }
             .rule-card:hover {
@@ -401,13 +614,14 @@
             .rule-card.disabled {
                 opacity: 0.4;
             }
-            .rule-card.editing {
-                border-color: var(--accent);
-                background: rgba(79, 124, 255, 0.04);
-            }
 
+            .rule-card-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
             .rule-toggle {
-                margin-top: 2px;
+                margin-top: 3px;
                 cursor: pointer;
                 appearance: none;
                 width: 34px;
@@ -444,7 +658,19 @@
             .rule-name {
                 font-size: 14px;
                 font-weight: 600;
-                margin-bottom: 7px;
+                margin-bottom: 8px;
+            }
+            .rule-conditions {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-bottom: 8px;
+            }
+            .rule-cond-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
             }
             .rule-meta {
                 display: flex;
@@ -455,7 +681,6 @@
             .pill {
                 display: inline-flex;
                 align-items: center;
-                gap: 3px;
                 padding: 3px 9px;
                 border-radius: 20px;
                 font-size: 11px;
@@ -504,38 +729,52 @@
                 background: var(--bg3);
                 color: var(--muted);
             }
+            .pill-logic {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            .pill-and {
+                background: rgba(79, 124, 255, 0.15);
+                color: #7fa6ff;
+            }
+            .pill-or {
+                background: rgba(251, 191, 36, 0.15);
+                color: var(--warning);
+            }
 
             .rule-actions {
                 display: flex;
-                gap: 6px;
+                gap: 5px;
                 flex-shrink: 0;
+                flex-wrap: wrap;
                 align-items: flex-start;
             }
-
-            /* inline edit panel */
-            .edit-panel {
-                display: none;
-                margin-top: 14px;
-                padding-top: 14px;
-                border-top: 1px solid var(--border);
-            }
-            .edit-panel.open {
-                display: block;
-            }
-
-            /* section header */
-            .section-header {
+            .order-btns {
                 display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
+                flex-direction: column;
+                gap: 3px;
             }
-            .section-title {
-                font-size: 15px;
-                font-weight: 600;
+            .order-btn {
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 11px;
+                padding: 2px 6px;
+                line-height: 1.4;
+                transition: all 0.15s;
+            }
+            .order-btn:hover {
+                background: var(--border2);
+                color: var(--text);
+            }
+            .order-btn:disabled {
+                opacity: 0.25;
+                cursor: not-allowed;
             }
 
-            /* empty */
+            /* ---- EMPTY ---- */
             .empty {
                 text-align: center;
                 padding: 48px 24px;
@@ -546,7 +785,57 @@
                 margin-bottom: 10px;
             }
 
-            /* log */
+            /* ---- TEST RESULT ---- */
+            .test-result {
+                margin-top: 14px;
+                display: none;
+            }
+            .test-result.show {
+                display: block;
+            }
+            .test-match {
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 13px;
+                margin-top: 7px;
+                font-size: 12px;
+            }
+            .test-match-from {
+                font-weight: 600;
+                margin-bottom: 2px;
+            }
+            .test-match-subject {
+                color: var(--muted);
+                margin-bottom: 6px;
+            }
+            .test-cond-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 4px;
+                font-size: 11px;
+            }
+            .cond-check {
+                width: 14px;
+                height: 14px;
+                border-radius: 3px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 9px;
+                flex-shrink: 0;
+            }
+            .cond-check.pass {
+                background: rgba(52, 211, 153, 0.2);
+                color: var(--success);
+            }
+            .cond-check.fail {
+                background: rgba(255, 79, 106, 0.2);
+                color: var(--danger);
+            }
+
+            /* ---- LOG ---- */
             .log-list {
                 display: flex;
                 flex-direction: column;
@@ -555,10 +844,18 @@
             .log-entry {
                 background: var(--bg2);
                 border: 1px solid var(--border);
-                border-radius: 8px;
+                border-radius: 9px;
+                overflow: hidden;
+                cursor: pointer;
+                transition: border-color 0.15s;
+            }
+            .log-entry:hover {
+                border-color: var(--border2);
+            }
+            .log-entry-header {
                 padding: 11px 15px;
                 display: grid;
-                grid-template-columns: 130px 90px 1fr;
+                grid-template-columns: 120px 80px 1fr;
                 gap: 10px;
                 align-items: center;
                 font-size: 13px;
@@ -576,37 +873,46 @@
             .log-detail strong {
                 color: var(--text);
             }
-
-            /* test result */
-            .test-result {
-                margin-top: 14px;
+            .log-expand {
                 display: none;
+                padding: 12px 15px;
+                border-top: 1px solid var(--border);
+                font-size: 12px;
+                background: var(--bg3);
             }
-            .test-result.show {
+            .log-expand.open {
                 display: block;
             }
-            .test-match {
-                background: var(--bg3);
-                border: 1px solid var(--border);
-                border-radius: 7px;
-                padding: 9px 13px;
-                margin-top: 7px;
-                font-size: 12px;
+            .log-expand-section {
+                margin-bottom: 10px;
             }
-            .test-match-from {
+            .log-expand-label {
+                font-size: 10px;
+                color: var(--muted);
                 font-weight: 600;
-                margin-bottom: 2px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 5px;
             }
-            .test-match-subject {
+            .log-body-text {
                 color: var(--muted);
-            }
-            .test-match-date {
-                color: var(--muted);
+                line-height: 1.6;
+                word-break: break-word;
+                font-family: monospace;
                 font-size: 11px;
-                margin-top: 2px;
+                background: var(--bg2);
+                padding: 8px 10px;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+            }
+            .log-cond {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                margin-bottom: 4px;
             }
 
-            /* toast */
+            /* ---- TOAST ---- */
             .toast {
                 position: fixed;
                 bottom: 24px;
@@ -622,8 +928,8 @@
                 transform: translateY(80px);
                 opacity: 0;
                 transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                z-index: 100;
-                max-width: 340px;
+                z-index: 200;
+                max-width: 320px;
             }
             .toast.show {
                 transform: translateY(0);
@@ -646,6 +952,7 @@
                 color: var(--warning);
             }
 
+            /* ---- SPINNER ---- */
             .spin {
                 display: inline-block;
                 width: 13px;
@@ -661,14 +968,61 @@
                 }
             }
 
-            ::-webkit-scrollbar {
-                width: 5px;
+            /* ---- MODAL ---- */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.65);
+                z-index: 100;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
             }
-            ::-webkit-scrollbar-thumb {
-                background: var(--border2);
-                border-radius: 3px;
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal {
+                background: var(--bg2);
+                border: 1px solid var(--border2);
+                border-radius: 14px;
+                padding: 26px;
+                width: 580px;
+                max-width: 100%;
+                max-height: calc(100vh - 40px);
+                overflow-y: auto;
+            }
+            .modal-title {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .modal-close {
+                cursor: pointer;
+                background: none;
+                border: none;
+                color: var(--muted);
+                font-size: 20px;
+                padding: 0 4px;
+                line-height: 1;
+            }
+            .modal-close:hover {
+                color: var(--text);
+            }
+            .modal-footer {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 20px;
+                padding-top: 16px;
+                border-top: 1px solid var(--border);
+                flex-wrap: wrap;
             }
 
+            /* ---- GUIDE ---- */
             .guide-table {
                 width: 100%;
                 border-collapse: collapse;
@@ -695,68 +1049,39 @@
                 font-size: 12px;
             }
 
-            /* modal overlay */
-            .modal-overlay {
-                display: none;
-                position: fixed;
-                inset: 0;
-                background: rgba(0, 0, 0, 0.6);
-                z-index: 200;
-                align-items: center;
-                justify-content: center;
+            ::-webkit-scrollbar {
+                width: 5px;
             }
-            .modal-overlay.open {
-                display: flex;
-            }
-            .modal {
-                background: var(--bg2);
-                border: 1px solid var(--border2);
-                border-radius: 14px;
-                padding: 28px;
-                width: 560px;
-                max-width: calc(100vw - 40px);
-                max-height: calc(100vh - 80px);
-                overflow-y: auto;
-            }
-            .modal-title {
-                font-size: 16px;
-                font-weight: 600;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            }
-            .modal-close {
-                cursor: pointer;
-                color: var(--muted);
-                font-size: 20px;
-                background: none;
-                border: none;
-                color: var(--muted);
-                padding: 0 4px;
-            }
-            .modal-close:hover {
-                color: var(--text);
-            }
-            .modal-footer {
-                display: flex;
-                gap: 10px;
-                justify-content: flex-end;
-                margin-top: 20px;
-                padding-top: 16px;
-                border-top: 1px solid var(--border);
+            ::-webkit-scrollbar-thumb {
+                background: var(--border2);
+                border-radius: 3px;
             }
         </style>
     </head>
     <body>
+        <!-- Mobile topbar -->
+        <div class="topbar" id="topbar">
+            <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                <span></span><span></span><span></span>
+            </button>
+            <span class="topbar-title">✉️ GmailFilter</span>
+        </div>
+
+        <!-- Sidebar overlay -->
+        <div
+            class="sidebar-overlay"
+            id="sidebar-overlay"
+            onclick="closeSidebar()"
+        ></div>
+
         <div class="shell">
             <!-- Sidebar -->
-            <aside class="sidebar">
+            <aside class="sidebar" id="sidebar">
                 <div class="logo">
                     <div class="logo-icon">✉️</div>
                     <div>
                         <div class="logo-text">GmailFilter</div>
-                        <div class="logo-sub">Apps Script v3</div>
+                        <div class="logo-sub">Apps Script v4</div>
                     </div>
                 </div>
                 <div
@@ -801,7 +1126,7 @@
             </aside>
 
             <main class="main">
-                <!-- ========== RULES PAGE ========== -->
+                <!-- ======= RULES PAGE ======= -->
                 <div class="page active" id="page-rules">
                     <div class="stats-row">
                         <div class="stat-card">
@@ -823,44 +1148,15 @@
                         <div class="card-title">Add New Rule</div>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>Rule Name</label>
+                                <label class="field-label">Rule Name</label>
                                 <input
                                     type="text"
                                     id="r-name"
-                                    placeholder="e.g. Block promo emails"
+                                    placeholder="e.g. Block marketing emails"
                                 />
                             </div>
                             <div class="form-group">
-                                <label>Check Field</label>
-                                <select id="r-field">
-                                    <option value="from">From (sender)</option>
-                                    <option value="subject">Subject</option>
-                                    <option value="body">Body</option>
-                                    <option value="to">To (recipient)</option>
-                                </select>
-                            </div>
-                            <div class="form-group form-full">
-                                <label>Pattern (regex)</label>
-                                <input
-                                    type="text"
-                                    id="r-pattern"
-                                    placeholder="e.g.  noreply@.*\.com   or   \b(sale|promo|winner)\b"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Flags</label>
-                                <select id="r-flags">
-                                    <option value="i">
-                                        Case insensitive (i)
-                                    </option>
-                                    <option value="">Case sensitive</option>
-                                    <option value="im">
-                                        Multiline + insensitive (im)
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Action</label>
+                                <label class="field-label">Action</label>
                                 <select
                                     id="r-action"
                                     onchange="
@@ -892,7 +1188,7 @@
                                 id="r-label-group"
                                 style="display: none"
                             >
-                                <label>Label Name</label>
+                                <label class="field-label">Label Name</label>
                                 <input
                                     type="text"
                                     id="r-label"
@@ -900,61 +1196,63 @@
                                 />
                             </div>
                             <div class="form-group form-full">
-                                <label>Scan Scope</label>
-                                <div class="scope-group" id="scope-group">
+                                <label class="field-label">Scan Scope</label>
+                                <div class="scope-group" id="r-scope-group">
                                     <label
                                         class="scope-chip checked"
-                                        id="chip-inbox"
+                                        id="r-chip-inbox"
                                         ><input
                                             type="checkbox"
                                             value="inbox"
                                             checked
                                             onchange="
-                                                syncChip(this, 'scope-group')
+                                                syncChip(this, 'r-scope-group')
                                             "
                                         />
                                         📥 Inbox</label
                                     >
-                                    <label class="scope-chip" id="chip-spam"
+                                    <label class="scope-chip" id="r-chip-spam"
                                         ><input
                                             type="checkbox"
                                             value="spam"
                                             onchange="
-                                                syncChip(this, 'scope-group')
+                                                syncChip(this, 'r-scope-group')
                                             "
                                         />
                                         🚫 Spam</label
                                     >
                                     <label
                                         class="scope-chip danger"
-                                        id="chip-trash"
+                                        id="r-chip-trash"
                                         ><input
                                             type="checkbox"
                                             value="trash"
                                             onchange="
-                                                syncChip(this, 'scope-group')
+                                                syncChip(this, 'r-scope-group')
                                             "
                                         />
                                         🗑️ Trash</label
                                     >
-                                    <label class="scope-chip" id="chip-sent"
+                                    <label class="scope-chip" id="r-chip-sent"
                                         ><input
                                             type="checkbox"
                                             value="sent"
                                             onchange="
-                                                syncChip(this, 'scope-group')
+                                                syncChip(this, 'r-scope-group')
                                             "
                                         />
                                         📤 Sent</label
                                     >
-                                    <label class="scope-chip" id="chip-anywhere"
+                                    <label
+                                        class="scope-chip"
+                                        id="r-chip-anywhere"
                                         ><input
                                             type="checkbox"
                                             value="anywhere"
                                             onchange="
                                                 handleAnywhere(
                                                     this,
-                                                    'scope-group',
+                                                    'r-scope-group',
                                                 )
                                             "
                                         />
@@ -963,23 +1261,67 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="action-strip">
+
+                        <!-- Conditions -->
+                        <div style="margin-bottom: 10px">
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: space-between;
+                                    margin-bottom: 8px;
+                                    flex-wrap: wrap;
+                                    gap: 8px;
+                                "
+                            >
+                                <label class="field-label">Conditions</label>
+                                <div class="logic-toggle">
+                                    <span>Match:</span>
+                                    <button
+                                        class="logic-btn active-and"
+                                        id="r-logic-and"
+                                        onclick="setLogic('r', 'AND')"
+                                    >
+                                        AND
+                                    </button>
+                                    <button
+                                        class="logic-btn"
+                                        id="r-logic-or"
+                                        onclick="setLogic('r', 'OR')"
+                                    >
+                                        OR
+                                    </button>
+                                    <span
+                                        style="
+                                            color: var(--muted);
+                                            font-size: 11px;
+                                        "
+                                        id="r-logic-hint"
+                                        >all conditions must match</span
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                class="conditions-list"
+                                id="r-conditions-list"
+                            ></div>
+                            <button
+                                class="add-condition-btn"
+                                onclick="addConditionRow('r')"
+                            >
+                                ＋ Add Condition
+                            </button>
+                        </div>
+
+                        <div class="action-strip" style="margin-top: 14px">
                             <button class="btn btn-primary" onclick="addRule()">
                                 ＋ Add Rule
                             </button>
                             <button
                                 class="btn btn-ghost"
-                                onclick="
-                                    testPattern(
-                                        'r-field',
-                                        'r-pattern',
-                                        'r-flags',
-                                        'scope-group',
-                                        'test-result',
-                                    )
-                                "
+                                onclick="testRuleForm('r', 'r-test-result')"
                             >
-                                🔍 Test Pattern
+                                🔍 Test
                             </button>
                             <button
                                 class="btn btn-ghost"
@@ -989,14 +1331,17 @@
                                 ▶ Run Now
                             </button>
                         </div>
-                        <div class="test-result" id="test-result"></div>
+                        <div class="test-result" id="r-test-result"></div>
                     </div>
 
                     <div class="section-header">
-                        <span class="section-title">Your Rules</span>
-                        <span style="font-size: 12px; color: var(--muted)"
-                            >Checked top-to-bottom · click ✏️ to edit</span
-                        >
+                        <div>
+                            <div class="section-title">Your Rules</div>
+                            <div class="section-note" style="margin-top: 4px">
+                                ⚠️ Rule order matters — filters run
+                                top-to-bottom. Use ↑↓ to reorder.
+                            </div>
+                        </div>
                     </div>
                     <div class="rules-list" id="rules-list">
                         <div class="empty">
@@ -1006,7 +1351,7 @@
                     </div>
                 </div>
 
-                <!-- ========== SETTINGS PAGE ========== -->
+                <!-- ======= SETTINGS PAGE ======= -->
                 <div class="page" id="page-settings">
                     <div class="card">
                         <div class="card-title">Auto-run Timer</div>
@@ -1020,7 +1365,7 @@
                             How often the filter script runs. Changes take
                             effect immediately.
                         </p>
-                        <div class="timer-row" id="timer-row">
+                        <div class="timer-row">
                             <button
                                 class="timer-btn"
                                 onclick="setTimer(1)"
@@ -1121,10 +1466,20 @@
                     </div>
                 </div>
 
-                <!-- ========== LOG PAGE ========== -->
+                <!-- ======= LOG PAGE ======= -->
                 <div class="page" id="page-log">
                     <div class="section-header">
-                        <span class="section-title">Activity Log</span>
+                        <span class="section-title"
+                            >Activity Log
+                            <span
+                                style="
+                                    font-size: 12px;
+                                    color: var(--muted);
+                                    font-weight: 400;
+                                "
+                                >(last 100 · click to expand)</span
+                            ></span
+                        >
                         <button
                             class="btn btn-ghost btn-sm"
                             onclick="clearLog()"
@@ -1140,7 +1495,7 @@
                     </div>
                 </div>
 
-                <!-- ========== GUIDE PAGE ========== -->
+                <!-- ======= GUIDE PAGE ======= -->
                 <div class="page" id="page-guide">
                     <div class="card">
                         <div class="card-title">Regex Quick Reference</div>
@@ -1201,7 +1556,7 @@
                             </tr>
                             <tr>
                                 <td class="mono">[\u0400-\u04FF]</td>
-                                <td>Cyrillic characters</td>
+                                <td>Cyrillic script</td>
                                 <td style="color: var(--muted)">
                                     Catches Cyrillic spam
                                 </td>
@@ -1209,185 +1564,104 @@
                         </table>
                     </div>
                     <div class="card">
-                        <div class="card-title">Templates — click to load</div>
+                        <div class="card-title">Multi-condition Examples</div>
                         <div
                             style="
-                                display: flex;
-                                flex-direction: column;
-                                gap: 8px;
+                                font-size: 13px;
+                                color: var(--muted);
+                                line-height: 1.8;
                             "
                         >
+                            <p style="margin-bottom: 12px">
+                                <strong style="color: var(--text)"
+                                    >AND logic</strong
+                                >
+                                — all conditions must match (more precise, fewer
+                                false positives)
+                            </p>
                             <div
-                                class="rule-card"
-                                style="cursor: pointer"
-                                onclick="
-                                    useTemplate(
-                                        'from',
-                                        'noreply@.*\\.com',
-                                        'i',
-                                        'trash',
-                                        '',
-                                        'Block all noreply senders',
-                                        ['inbox', 'spam'],
-                                    )
+                                style="
+                                    background: var(--bg3);
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    padding: 12px;
+                                    margin-bottom: 14px;
+                                    font-size: 12px;
                                 "
                             >
-                                <div class="rule-body">
-                                    <div class="rule-name">
-                                        🗑️ Block all noreply senders
-                                    </div>
-                                    <div class="rule-meta">
-                                        <span class="pill pill-field">from</span
-                                        ><span class="pill pill-pattern"
-                                            >noreply@.*\.com</span
-                                        ><span class="pill pill-action"
-                                            >trash</span
-                                        ><span class="pill pill-scope"
-                                            >inbox+spam</span
-                                        >
-                                    </div>
+                                <div
+                                    style="
+                                        color: var(--text);
+                                        margin-bottom: 6px;
+                                    "
+                                >
+                                    Block only marketing emails from a specific
+                                    company:
                                 </div>
-                                <button class="btn btn-ghost btn-sm">
-                                    Use →
-                                </button>
+                                <div>
+                                    📧 <span class="mono">from</span> matches
+                                    <span class="mono">@acme\.com</span>
+                                </div>
+                                <div>
+                                    📝 <span class="mono">subject</span> matches
+                                    <span class="mono"
+                                        >\b(sale|promo|offer)\b</span
+                                    >
+                                </div>
+                                <div
+                                    style="
+                                        margin-top: 6px;
+                                        color: var(--success);
+                                        font-size: 11px;
+                                    "
+                                >
+                                    ✓ Will NOT trash regular emails from
+                                    @acme.com — only promotional ones
+                                </div>
                             </div>
+                            <p style="margin-bottom: 12px">
+                                <strong style="color: var(--text)"
+                                    >OR logic</strong
+                                >
+                                — any condition triggers (broader, catches more)
+                            </p>
                             <div
-                                class="rule-card"
-                                style="cursor: pointer"
-                                onclick="
-                                    useTemplate(
-                                        'body',
-                                        'unsubscribe|opt.out',
-                                        'i',
-                                        'trash',
-                                        '',
-                                        'Trash newsletters',
-                                        ['inbox', 'spam'],
-                                    )
+                                style="
+                                    background: var(--bg3);
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    padding: 12px;
+                                    font-size: 12px;
                                 "
                             >
-                                <div class="rule-body">
-                                    <div class="rule-name">
-                                        📦 Trash newsletters
-                                    </div>
-                                    <div class="rule-meta">
-                                        <span class="pill pill-field">body</span
-                                        ><span class="pill pill-pattern"
-                                            >unsubscribe|opt.out</span
-                                        ><span class="pill pill-action"
-                                            >trash</span
-                                        ><span class="pill pill-scope"
-                                            >inbox+spam</span
-                                        >
-                                    </div>
+                                <div
+                                    style="
+                                        color: var(--text);
+                                        margin-bottom: 6px;
+                                    "
+                                >
+                                    Label anything GitHub-related:
                                 </div>
-                                <button class="btn btn-ghost btn-sm">
-                                    Use →
-                                </button>
-                            </div>
-                            <div
-                                class="rule-card"
-                                style="cursor: pointer"
-                                onclick="
-                                    useTemplate(
-                                        'subject',
-                                        '\\b(winner|prize|claim now|act fast|free gift)\\b',
-                                        'i',
-                                        'delete',
-                                        '',
-                                        'Permanently delete obvious spam',
-                                        ['inbox', 'spam'],
-                                    )
-                                "
-                            >
-                                <div class="rule-body">
-                                    <div class="rule-name">
-                                        🔥 Permanently delete obvious spam
-                                    </div>
-                                    <div class="rule-meta">
-                                        <span class="pill pill-field"
-                                            >subject</span
-                                        ><span class="pill pill-pattern"
-                                            >\b(winner|prize)\b</span
-                                        ><span class="pill pill-action delete"
-                                            >delete</span
-                                        ><span class="pill pill-scope"
-                                            >inbox+spam</span
-                                        >
-                                    </div>
+                                <div>
+                                    📧 <span class="mono">from</span> matches
+                                    <span class="mono">@github\.com</span>
                                 </div>
-                                <button class="btn btn-ghost btn-sm">
-                                    Use →
-                                </button>
-                            </div>
-                            <div
-                                class="rule-card"
-                                style="cursor: pointer"
-                                onclick="
-                                    useTemplate(
-                                        'from',
-                                        '@github\\.com',
-                                        'i',
-                                        'label',
-                                        'GitHub',
-                                        'Label GitHub notifications',
-                                        ['inbox'],
-                                    )
-                                "
-                            >
-                                <div class="rule-body">
-                                    <div class="rule-name">
-                                        🏷️ Label GitHub notifications
-                                    </div>
-                                    <div class="rule-meta">
-                                        <span class="pill pill-field">from</span
-                                        ><span class="pill pill-pattern"
-                                            >@github\.com</span
-                                        ><span class="pill pill-action label"
-                                            >label: GitHub</span
-                                        ><span class="pill pill-scope"
-                                            >inbox</span
-                                        >
-                                    </div>
+                                <div>
+                                    📝 <span class="mono">subject</span> matches
+                                    <span class="mono"
+                                        >github|pull request|CI</span
+                                    >
                                 </div>
-                                <button class="btn btn-ghost btn-sm">
-                                    Use →
-                                </button>
-                            </div>
-                            <div
-                                class="rule-card"
-                                style="cursor: pointer"
-                                onclick="
-                                    useTemplate(
-                                        'subject',
-                                        'invoice|receipt|order confirmation',
-                                        'i',
-                                        'archive',
-                                        '',
-                                        'Archive receipts',
-                                        ['inbox'],
-                                    )
-                                "
-                            >
-                                <div class="rule-body">
-                                    <div class="rule-name">
-                                        📦 Archive receipts &amp; invoices
-                                    </div>
-                                    <div class="rule-meta">
-                                        <span class="pill pill-field"
-                                            >subject</span
-                                        ><span class="pill pill-pattern"
-                                            >invoice|receipt</span
-                                        ><span class="pill pill-action archive"
-                                            >archive</span
-                                        ><span class="pill pill-scope"
-                                            >inbox</span
-                                        >
-                                    </div>
+                                <div
+                                    style="
+                                        margin-top: 6px;
+                                        color: var(--success);
+                                        font-size: 11px;
+                                    "
+                                >
+                                    ✓ Catches GitHub emails even if forwarded
+                                    from another address
                                 </div>
-                                <button class="btn btn-ghost btn-sm">
-                                    Use →
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -1395,7 +1669,7 @@
             </main>
         </div>
 
-        <!-- ========== EDIT MODAL ========== -->
+        <!-- ======= EDIT MODAL ======= -->
         <div class="modal-overlay" id="edit-modal">
             <div class="modal">
                 <div class="modal-title">
@@ -1406,7 +1680,7 @@
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Rule Name</label>
+                        <label class="field-label">Rule Name</label>
                         <input
                             type="text"
                             id="e-name"
@@ -1414,34 +1688,7 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>Check Field</label>
-                        <select id="e-field">
-                            <option value="from">From (sender)</option>
-                            <option value="subject">Subject</option>
-                            <option value="body">Body</option>
-                            <option value="to">To (recipient)</option>
-                        </select>
-                    </div>
-                    <div class="form-group form-full">
-                        <label>Pattern (regex)</label>
-                        <input
-                            type="text"
-                            id="e-pattern"
-                            placeholder="e.g. noreply@.*\.com"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Flags</label>
-                        <select id="e-flags">
-                            <option value="i">Case insensitive (i)</option>
-                            <option value="">Case sensitive</option>
-                            <option value="im">
-                                Multiline + insensitive (im)
-                            </option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Action</label>
+                        <label class="field-label">Action</label>
                         <select
                             id="e-action"
                             onchange="toggleLabel('e-label-group', 'e-action')"
@@ -1467,7 +1714,7 @@
                         id="e-label-group"
                         style="display: none"
                     >
-                        <label>Label Name</label>
+                        <label class="field-label">Label Name</label>
                         <input
                             type="text"
                             id="e-label"
@@ -1475,7 +1722,7 @@
                         />
                     </div>
                     <div class="form-group form-full">
-                        <label>Scan Scope</label>
+                        <label class="field-label">Scan Scope</label>
                         <div class="scope-group" id="e-scope-group">
                             <label class="scope-chip" id="e-chip-inbox"
                                 ><input
@@ -1522,18 +1769,53 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-bottom: 14px">
+                <div style="margin-bottom: 12px">
+                    <div
+                        style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            margin-bottom: 8px;
+                            flex-wrap: wrap;
+                            gap: 8px;
+                        "
+                    >
+                        <label class="field-label">Conditions</label>
+                        <div class="logic-toggle">
+                            <span>Match:</span>
+                            <button
+                                class="logic-btn active-and"
+                                id="e-logic-and"
+                                onclick="setLogic('e', 'AND')"
+                            >
+                                AND
+                            </button>
+                            <button
+                                class="logic-btn"
+                                id="e-logic-or"
+                                onclick="setLogic('e', 'OR')"
+                            >
+                                OR
+                            </button>
+                            <span
+                                style="color: var(--muted); font-size: 11px"
+                                id="e-logic-hint"
+                                >all conditions must match</span
+                            >
+                        </div>
+                    </div>
+                    <div class="conditions-list" id="e-conditions-list"></div>
+                    <button
+                        class="add-condition-btn"
+                        onclick="addConditionRow('e')"
+                    >
+                        ＋ Add Condition
+                    </button>
+                </div>
+                <div style="margin-bottom: 10px">
                     <button
                         class="btn btn-ghost btn-sm"
-                        onclick="
-                            testPattern(
-                                'e-field',
-                                'e-pattern',
-                                'e-flags',
-                                'e-scope-group',
-                                'e-test-result',
-                            )
-                        "
+                        onclick="testRuleForm('e', 'e-test-result')"
                     >
                         🔍 Test Pattern
                     </button>
@@ -1560,6 +1842,21 @@
             var rules = [];
             var currentInterval = 1;
             var editingRuleId = null;
+            var logicState = { r: "AND", e: "AND" };
+
+            // ---- mobile sidebar ----
+            function toggleSidebar() {
+                document.getElementById("sidebar").classList.toggle("open");
+                document
+                    .getElementById("sidebar-overlay")
+                    .classList.toggle("open");
+            }
+            function closeSidebar() {
+                document.getElementById("sidebar").classList.remove("open");
+                document
+                    .getElementById("sidebar-overlay")
+                    .classList.remove("open");
+            }
 
             // ---- nav ----
             function showPage(name) {
@@ -1571,6 +1868,7 @@
                 });
                 document.getElementById("page-" + name).classList.add("active");
                 document.getElementById("nav-" + name).classList.add("active");
+                closeSidebar();
                 if (name === "log") loadLog();
             }
 
@@ -1585,14 +1883,192 @@
                 }, 3200);
             }
 
-            // ---- scope chips (generic, works for both add and edit forms) ----
+            // ---- logic toggle ----
+            function setLogic(prefix, val) {
+                logicState[prefix] = val;
+                var andBtn = document.getElementById(prefix + "-logic-and");
+                var orBtn = document.getElementById(prefix + "-logic-or");
+                var hint = document.getElementById(prefix + "-logic-hint");
+                andBtn.className =
+                    "logic-btn" + (val === "AND" ? " active-and" : "");
+                orBtn.className =
+                    "logic-btn" + (val === "OR" ? " active-or" : "");
+                hint.textContent =
+                    val === "AND"
+                        ? "all conditions must match"
+                        : "any condition triggers";
+                renderConditionBadges(prefix);
+            }
+
+            // ---- condition rows ----
+            function conditionRowHTML(prefix, idx, cond) {
+                var badgeClass =
+                    logicState[prefix] === "OR" ? "badge-or" : "badge-and";
+                var badgeText = logicState[prefix] === "OR" ? "OR" : "AND";
+                var badge =
+                    idx === 0
+                        ? ""
+                        : '<span class="condition-badge ' +
+                          badgeClass +
+                          '">' +
+                          badgeText +
+                          "</span>";
+
+                var fields = ["from", "subject", "body", "to"];
+                var fieldOpts = fields
+                    .map(function (f) {
+                        return (
+                            '<option value="' +
+                            f +
+                            '"' +
+                            (cond && cond.field === f ? " selected" : "") +
+                            ">" +
+                            fieldLabel(f) +
+                            "</option>"
+                        );
+                    })
+                    .join("");
+
+                var flagOpts = [
+                    { v: "i", l: "insensitive" },
+                    { v: "", l: "sensitive" },
+                    { v: "im", l: "multiline" },
+                ]
+                    .map(function (o) {
+                        return (
+                            '<option value="' +
+                            o.v +
+                            '"' +
+                            (cond && cond.flags === o.v ? " selected" : "") +
+                            ">" +
+                            o.l +
+                            "</option>"
+                        );
+                    })
+                    .join("");
+
+                return (
+                    '<div class="condition-row" data-idx="' +
+                    idx +
+                    '">' +
+                    badge +
+                    '<select onchange="void(0)" class="cond-field" style="max-width:110px;">' +
+                    fieldOpts +
+                    "</select>" +
+                    '<input type="text" class="cond-pattern" placeholder="pattern (regex)" value="' +
+                    esc(cond ? cond.pattern : "") +
+                    '">' +
+                    '<select class="cond-flags" style="max-width:100px;">' +
+                    flagOpts +
+                    "</select>" +
+                    '<button class="condition-remove" onclick="removeConditionRow(this,\'' +
+                    prefix +
+                    '\')" title="Remove">×</button>' +
+                    "</div>"
+                );
+            }
+
+            function fieldLabel(f) {
+                return f === "from"
+                    ? "From"
+                    : f === "subject"
+                      ? "Subject"
+                      : f === "body"
+                        ? "Body"
+                        : "To";
+            }
+
+            function addConditionRow(prefix, cond) {
+                var list = document.getElementById(prefix + "-conditions-list");
+                var idx = list.children.length;
+                var div = document.createElement("div");
+                div.innerHTML = conditionRowHTML(prefix, idx, cond || null);
+                list.appendChild(div.firstChild);
+            }
+
+            function removeConditionRow(btn, prefix) {
+                var list = document.getElementById(prefix + "-conditions-list");
+                if (list.children.length <= 1) {
+                    toast("At least one condition required", "error");
+                    return;
+                }
+                btn.closest(".condition-row").remove();
+                reindexConditions(prefix);
+            }
+
+            function reindexConditions(prefix) {
+                var list = document.getElementById(prefix + "-conditions-list");
+                var rows = list.querySelectorAll(".condition-row");
+                rows.forEach(function (row, i) {
+                    row.dataset.idx = i;
+                    var badge = row.querySelector(".condition-badge");
+                    if (i === 0) {
+                        if (badge) badge.remove();
+                    } else {
+                        var badgeClass =
+                            logicState[prefix] === "OR"
+                                ? "badge-or"
+                                : "badge-and";
+                        var badgeText =
+                            logicState[prefix] === "OR" ? "OR" : "AND";
+                        if (badge) {
+                            badge.className = "condition-badge " + badgeClass;
+                            badge.textContent = badgeText;
+                        } else {
+                            var b = document.createElement("span");
+                            b.className = "condition-badge " + badgeClass;
+                            b.textContent = badgeText;
+                            row.insertBefore(b, row.firstChild);
+                        }
+                    }
+                });
+            }
+
+            function renderConditionBadges(prefix) {
+                reindexConditions(prefix);
+            }
+
+            function getConditions(prefix) {
+                var list = document.getElementById(prefix + "-conditions-list");
+                var rows = list.querySelectorAll(".condition-row");
+                var conds = [];
+                rows.forEach(function (row) {
+                    conds.push({
+                        field: row.querySelector(".cond-field").value,
+                        pattern: row
+                            .querySelector(".cond-pattern")
+                            .value.trim(),
+                        flags: row.querySelector(".cond-flags").value,
+                    });
+                });
+                return conds;
+            }
+
+            function validateConditions(conds) {
+                for (var i = 0; i < conds.length; i++) {
+                    if (!conds[i].pattern)
+                        return "Condition " + (i + 1) + " has an empty pattern";
+                    try {
+                        new RegExp(conds[i].pattern, conds[i].flags);
+                    } catch (e) {
+                        return (
+                            "Condition " +
+                            (i + 1) +
+                            ": invalid regex — " +
+                            e.message
+                        );
+                    }
+                }
+                return null;
+            }
+
+            // ---- scope chips ----
             function syncChip(cb, groupId) {
                 var chip = cb.closest(".scope-chip");
                 if (cb.checked) chip.classList.add("checked");
                 else {
                     chip.classList.remove("checked");
                     if (cb.value !== "anywhere") {
-                        // uncheck "everywhere" if a specific one was unchecked
                         var anyCb = document.querySelector(
                             "#" + groupId + ' input[value="anywhere"]',
                         );
@@ -1607,16 +2083,19 @@
             }
 
             function handleAnywhere(cb, groupId) {
-                var group = document.getElementById(groupId);
-                group.querySelectorAll(".scope-chip").forEach(function (chip) {
-                    var input = chip.querySelector("input");
-                    input.checked = cb.checked;
-                    if (cb.checked) chip.classList.add("checked");
-                    else chip.classList.remove("checked");
-                });
+                document
+                    .getElementById(groupId)
+                    .querySelectorAll(".scope-chip")
+                    .forEach(function (chip) {
+                        var input = chip.querySelector("input");
+                        input.checked = cb.checked;
+                        if (cb.checked) chip.classList.add("checked");
+                        else chip.classList.remove("checked");
+                    });
                 if (!cb.checked) {
-                    // default back to inbox
-                    var inboxCb = group.querySelector('input[value="inbox"]');
+                    var inboxCb = document.querySelector(
+                        "#" + groupId + ' input[value="inbox"]',
+                    );
                     if (inboxCb) {
                         inboxCb.checked = true;
                         inboxCb.closest(".scope-chip").classList.add("checked");
@@ -1624,11 +2103,10 @@
                 }
             }
 
-            function getSelectedScope(groupId) {
-                var checks = document.querySelectorAll(
-                    "#" + groupId + " input:checked",
-                );
-                var vals = Array.from(checks).map(function (c) {
+            function getScope(groupId) {
+                var vals = Array.from(
+                    document.querySelectorAll("#" + groupId + " input:checked"),
+                ).map(function (c) {
                     return c.value;
                 });
                 if (vals.indexOf("anywhere") !== -1) return ["anywhere"];
@@ -1636,28 +2114,29 @@
             }
 
             function setScopeChips(groupId, scope) {
-                var group = document.getElementById(groupId);
-                group.querySelectorAll(".scope-chip").forEach(function (chip) {
-                    var input = chip.querySelector("input");
-                    var on =
-                        scope.indexOf(input.value) !== -1 ||
-                        scope.indexOf("anywhere") !== -1;
-                    input.checked = on;
-                    if (on) chip.classList.add("checked");
-                    else chip.classList.remove("checked");
-                });
+                document
+                    .getElementById(groupId)
+                    .querySelectorAll(".scope-chip")
+                    .forEach(function (chip) {
+                        var input = chip.querySelector("input");
+                        var on =
+                            scope.indexOf(input.value) !== -1 ||
+                            scope.indexOf("anywhere") !== -1;
+                        input.checked = on;
+                        if (on) chip.classList.add("checked");
+                        else chip.classList.remove("checked");
+                    });
             }
 
-            // ---- label toggle (generic) ----
-            function toggleLabel(labelGroupId, actionSelectId) {
-                var action = document.getElementById(actionSelectId).value;
-                var show =
-                    action === "label" ||
-                    action === "label+archive" ||
-                    action === "trash+label";
-                document.getElementById(labelGroupId).style.display = show
-                    ? "block"
-                    : "none";
+            // ---- label toggle ----
+            function toggleLabel(lgId, selId) {
+                var a = document.getElementById(selId).value;
+                document.getElementById(lgId).style.display =
+                    a === "label" ||
+                    a === "label+archive" ||
+                    a === "trash+label"
+                        ? "flex"
+                        : "none";
             }
 
             // ---- stats ----
@@ -1671,30 +2150,22 @@
                         document.getElementById("stat-log").textContent =
                             s.recentActions;
                         currentInterval = s.intervalMinutes || 1;
-
                         var badge = document.getElementById("trigger-badge");
-                        var text = document.getElementById("trigger-text");
                         badge.className =
                             "trigger-badge " + (s.triggerActive ? "on" : "off");
-                        text.textContent = s.triggerActive
-                            ? s.triggerLabel
-                            : "Inactive";
-
+                        document.getElementById("trigger-text").textContent =
+                            s.triggerActive ? s.triggerLabel : "Inactive";
                         document
                             .querySelectorAll(".timer-btn")
-                            .forEach(function (btn) {
-                                btn.classList.toggle(
+                            .forEach(function (b) {
+                                b.classList.toggle(
                                     "active",
-                                    parseInt(btn.dataset.min) ===
-                                        currentInterval,
+                                    parseInt(b.dataset.min) === currentInterval,
                                 );
                             });
-
-                        var statusEl = document.getElementById(
-                            "trigger-status-text",
-                        );
-                        if (statusEl)
-                            statusEl.textContent =
+                        var st = document.getElementById("trigger-status-text");
+                        if (st)
+                            st.textContent =
                                 "Status: " +
                                 (s.triggerActive
                                     ? s.triggerLabel + " — active"
@@ -1703,7 +2174,7 @@
                     .getStats();
             }
 
-            // ---- rules ----
+            // ---- load / render rules ----
             function loadRules() {
                 google.script.run
                     .withSuccessHandler(function (data) {
@@ -1719,37 +2190,64 @@
                 return scope.join("+");
             }
 
+            function actionClass(action) {
+                return action === "archive" || action === "label+archive"
+                    ? "archive"
+                    : action === "label" || action === "trash+label"
+                      ? "label"
+                      : action === "star"
+                        ? "star"
+                        : action === "markread"
+                          ? "markread"
+                          : action === "delete"
+                            ? "delete"
+                            : "";
+            }
+
             function renderRules() {
                 var el = document.getElementById("rules-list");
                 if (!rules.length) {
                     el.innerHTML =
-                        '<div class="empty"><div class="empty-icon">⚡</div><p>No rules yet</p></div>';
+                        '<div class="empty"><div class="empty-icon">⚡</div><p>No rules yet — add one above</p></div>';
                     return;
                 }
                 el.innerHTML = rules
-                    .map(function (r) {
-                        var ac =
-                            r.action === "archive" ||
-                            r.action === "label+archive"
-                                ? "archive"
-                                : r.action === "label" ||
-                                    r.action === "trash+label"
-                                  ? "label"
-                                  : r.action === "star"
-                                    ? "star"
-                                    : r.action === "markread"
-                                      ? "markread"
-                                      : r.action === "delete"
-                                        ? "delete"
-                                        : "";
-                        var labelPart = r.label ? ": " + r.label : "";
+                    .map(function (r, idx) {
+                        var ac = actionClass(r.action);
+                        var lp = r.label ? ": " + r.label : "";
                         var disabled = r.enabled === false;
+                        var logic = r.logic || "AND";
+                        var conds = r.conditions || [];
+
+                        var condHTML = conds
+                            .map(function (c, i) {
+                                var badge =
+                                    i === 0
+                                        ? ""
+                                        : '<span class="pill pill-logic pill-' +
+                                          logic.toLowerCase() +
+                                          '">' +
+                                          logic +
+                                          "</span>";
+                                return (
+                                    '<div class="rule-cond-row">' +
+                                    badge +
+                                    '<span class="pill pill-field">' +
+                                    c.field +
+                                    '</span><span class="pill pill-pattern">' +
+                                    esc(c.pattern) +
+                                    "</span></div>"
+                                );
+                            })
+                            .join("");
+
                         return [
                             '<div class="rule-card ' +
                                 (disabled ? "disabled" : "") +
                                 '" id="rc-' +
                                 r.id +
                                 '">',
+                            '<div class="rule-card-header">',
                             '<input type="checkbox" class="rule-toggle" ' +
                                 (disabled ? "" : "checked") +
                                 " onchange=\"toggleRule('" +
@@ -1757,20 +2255,17 @@
                                 "')\">",
                             '<div class="rule-body">',
                             '<div class="rule-name">' +
-                                esc(r.name || r.pattern) +
+                                esc(r.name || "Unnamed") +
+                                "</div>",
+                            '<div class="rule-conditions">' +
+                                condHTML +
                                 "</div>",
                             '<div class="rule-meta">',
-                            '<span class="pill pill-field">' +
-                                r.field +
-                                "</span>",
-                            '<span class="pill pill-pattern">' +
-                                esc(r.pattern) +
-                                "</span>",
                             '<span class="pill pill-action ' +
                                 ac +
                                 '">' +
                                 r.action +
-                                esc(labelPart) +
+                                esc(lp) +
                                 "</span>",
                             '<span class="pill pill-scope">📍 ' +
                                 esc(scopeLabel(r.scope)) +
@@ -1783,12 +2278,25 @@
                             "</div>",
                             "</div>",
                             '<div class="rule-actions">',
+                            '<div class="order-btns">',
+                            '<button class="order-btn" onclick="moveRule(\'' +
+                                r.id +
+                                "','up')\"   " +
+                                (idx === 0 ? "disabled" : "") +
+                                ' title="Move up">↑</button>',
+                            '<button class="order-btn" onclick="moveRule(\'' +
+                                r.id +
+                                "','down')\" " +
+                                (idx === rules.length - 1 ? "disabled" : "") +
+                                ' title="Move down">↓</button>',
+                            "</div>",
                             '<button class="btn btn-ghost btn-sm" onclick="openEditModal(\'' +
                                 r.id +
-                                "')\">✏️ Edit</button>",
+                                "')\">✏️</button>",
                             '<button class="btn btn-danger btn-sm" onclick="deleteRule(\'' +
                                 r.id +
-                                "')\">Delete</button>",
+                                "')\">✕</button>",
+                            "</div>",
                             "</div>",
                             "</div>",
                         ].join("");
@@ -1807,21 +2315,19 @@
             // ---- add rule ----
             function addRule() {
                 var name = document.getElementById("r-name").value.trim();
-                var field = document.getElementById("r-field").value;
-                var pattern = document.getElementById("r-pattern").value.trim();
-                var flags = document.getElementById("r-flags").value;
                 var action = document.getElementById("r-action").value;
                 var label = document.getElementById("r-label").value.trim();
-                var scope = getSelectedScope("scope-group");
+                var scope = getScope("r-scope-group");
+                var conds = getConditions("r");
+                var logic = logicState["r"];
 
-                if (!pattern) {
-                    toast("Enter a pattern first", "error");
+                if (!conds.length) {
+                    toast("Add at least one condition", "error");
                     return;
                 }
-                try {
-                    new RegExp(pattern, flags);
-                } catch (e) {
-                    toast("Invalid regex: " + e.message, "error");
+                var err = validateConditions(conds);
+                if (err) {
+                    toast(err, "error");
                     return;
                 }
                 if (
@@ -1841,24 +2347,43 @@
                         loadStats();
                         toast("Rule added ✓", "success");
                         document.getElementById("r-name").value = "";
-                        document.getElementById("r-pattern").value = "";
                         document.getElementById("r-label").value = "";
+                        document.getElementById("r-conditions-list").innerHTML =
+                            "";
+                        addConditionRow("r");
                         document
-                            .getElementById("test-result")
+                            .getElementById("r-test-result")
                             .classList.remove("show");
                     })
                     .withFailureHandler(function (e) {
                         toast("Error: " + e.message, "error");
                     })
                     .addRule({
-                        name: name || pattern,
-                        field: field,
-                        pattern: pattern,
-                        flags: flags,
+                        name: name || conds[0].pattern,
+                        conditions: conds,
+                        logic: logic,
                         action: action,
                         label: label,
                         scope: scope,
                     });
+            }
+
+            // ---- move rule ----
+            function moveRule(id, dir) {
+                google.script.run
+                    .withSuccessHandler(function (ok) {
+                        if (!ok) return;
+                        var idx = rules.findIndex(function (r) {
+                            return r.id === id;
+                        });
+                        var newIdx = dir === "up" ? idx - 1 : idx + 1;
+                        if (newIdx < 0 || newIdx >= rules.length) return;
+                        var tmp = rules[idx];
+                        rules[idx] = rules[newIdx];
+                        rules[newIdx] = tmp;
+                        renderRules();
+                    })
+                    .moveRule(id, dir);
             }
 
             // ---- edit modal ----
@@ -1870,14 +2395,23 @@
                 editingRuleId = id;
 
                 document.getElementById("e-name").value = rule.name || "";
-                document.getElementById("e-field").value = rule.field || "from";
-                document.getElementById("e-pattern").value = rule.pattern || "";
-                document.getElementById("e-flags").value = rule.flags || "i";
                 document.getElementById("e-action").value =
                     rule.action || "trash";
                 document.getElementById("e-label").value = rule.label || "";
                 toggleLabel("e-label-group", "e-action");
                 setScopeChips("e-scope-group", rule.scope || ["inbox"]);
+
+                // set logic
+                logicState["e"] = rule.logic || "AND";
+                setLogic("e", logicState["e"]);
+
+                // populate conditions
+                var list = document.getElementById("e-conditions-list");
+                list.innerHTML = "";
+                (rule.conditions || []).forEach(function (c) {
+                    addConditionRow("e", c);
+                });
+                if (!list.children.length) addConditionRow("e");
 
                 document
                     .getElementById("e-test-result")
@@ -1892,20 +2426,18 @@
 
             function saveEdit() {
                 if (!editingRuleId) return;
-
-                var pattern = document.getElementById("e-pattern").value.trim();
-                var flags = document.getElementById("e-flags").value;
                 var action = document.getElementById("e-action").value;
                 var label = document.getElementById("e-label").value.trim();
+                var conds = getConditions("e");
+                var logic = logicState["e"];
 
-                if (!pattern) {
-                    toast("Pattern cannot be empty", "error");
+                if (!conds.length) {
+                    toast("Add at least one condition", "error");
                     return;
                 }
-                try {
-                    new RegExp(pattern, flags);
-                } catch (e) {
-                    toast("Invalid regex: " + e.message, "error");
+                var err = validateConditions(conds);
+                if (err) {
+                    toast(err, "error");
                     return;
                 }
                 if (
@@ -1922,13 +2454,12 @@
                     id: editingRuleId,
                     name:
                         document.getElementById("e-name").value.trim() ||
-                        pattern,
-                    field: document.getElementById("e-field").value,
-                    pattern: pattern,
-                    flags: flags,
+                        conds[0].pattern,
+                    conditions: conds,
+                    logic: logic,
                     action: action,
                     label: label,
-                    scope: getSelectedScope("e-scope-group"),
+                    scope: getScope("e-scope-group"),
                 };
 
                 google.script.run
@@ -1949,7 +2480,6 @@
                     .updateRule(updated);
             }
 
-            // close modal on overlay click
             document
                 .getElementById("edit-modal")
                 .addEventListener("click", function (e) {
@@ -1984,33 +2514,25 @@
                     .toggleRule(id);
             }
 
-            // ---- test pattern (generic — works for both add and edit forms) ----
-            function testPattern(
-                fieldId,
-                patternId,
-                flagsId,
-                scopeGroupId,
-                resultId,
-            ) {
-                var field = document.getElementById(fieldId).value;
-                var pattern = document.getElementById(patternId).value.trim();
-                var flags = document.getElementById(flagsId).value;
-                var scope = getSelectedScope(scopeGroupId);
+            // ---- test rule ----
+            function testRuleForm(prefix, resultId) {
+                var conds = getConditions(prefix);
+                var logic = logicState[prefix];
+                var scope = getScope(prefix + "-scope-group");
                 var resEl = document.getElementById(resultId);
 
-                if (!pattern) {
-                    toast("Enter a pattern first", "error");
+                if (!conds.length) {
+                    toast("Add at least one condition", "error");
                     return;
                 }
-                try {
-                    new RegExp(pattern, flags);
-                } catch (e) {
-                    toast("Invalid regex: " + e.message, "error");
+                var err = validateConditions(conds);
+                if (err) {
+                    toast(err, "error");
                     return;
                 }
 
                 resEl.innerHTML =
-                    '<span class="spin"></span> Testing across selected scopes (all messages in threads)…';
+                    '<span class="spin"></span> Testing across selected scopes…';
                 resEl.classList.add("show");
 
                 google.script.run
@@ -2024,29 +2546,46 @@
                         }
                         if (!res.matches.length) {
                             resEl.innerHTML =
-                                '<span style="color:var(--muted)">✓ No matches found in selected scopes</span>';
+                                '<span style="color:var(--muted)">✓ No matches found</span>';
                             return;
                         }
+
                         resEl.innerHTML =
                             '<div style="color:var(--warning);margin-bottom:8px;font-weight:600;">⚠ ' +
                             res.matches.length +
                             " match(es) found:</div>" +
                             res.matches
                                 .map(function (m) {
+                                    var condRows = (m.conditions || [])
+                                        .map(function (c) {
+                                            var cls = c.matched
+                                                ? "pass"
+                                                : "fail";
+                                            var sym = c.matched ? "✓" : "✗";
+                                            return (
+                                                '<div class="test-cond-row"><span class="cond-check ' +
+                                                cls +
+                                                '">' +
+                                                sym +
+                                                '</span><span class="pill pill-field" style="font-size:10px;">' +
+                                                c.field +
+                                                '</span><span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
+                                                esc(c.pattern) +
+                                                "</span></div>"
+                                            );
+                                        })
+                                        .join("");
                                     var d = new Date(m.date);
                                     return (
                                         '<div class="test-match"><div class="test-match-from">' +
                                         esc(m.from) +
                                         '</div><div class="test-match-subject">' +
                                         esc(m.subject) +
-                                        '</div><div class="test-match-date">' +
+                                        '</div><div style="color:var(--muted);font-size:10px;margin-bottom:4px;">' +
                                         d.toLocaleDateString() +
-                                        " " +
-                                        d.toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        }) +
-                                        "</div></div>"
+                                        "</div>" +
+                                        condRows +
+                                        "</div>"
                                     );
                                 })
                                 .join("");
@@ -2057,7 +2596,7 @@
                             esc(e.message) +
                             "</span>";
                     })
-                    .testPattern(field, pattern, flags, scope);
+                    .testRule(conds, logic, scope);
             }
 
             // ---- run now ----
@@ -2087,16 +2626,16 @@
             }
 
             // ---- timer ----
-            function setTimer(minutes) {
+            function setTimer(m) {
                 google.script.run
                     .withSuccessHandler(function (msg) {
-                        currentInterval = minutes;
+                        currentInterval = m;
                         document
                             .querySelectorAll(".timer-btn")
-                            .forEach(function (btn) {
-                                btn.classList.toggle(
+                            .forEach(function (b) {
+                                b.classList.toggle(
                                     "active",
-                                    parseInt(btn.dataset.min) === minutes,
+                                    parseInt(b.dataset.min) === m,
                                 );
                             });
                         toast(msg, "success");
@@ -2105,10 +2644,10 @@
                     .withFailureHandler(function (e) {
                         toast("Error: " + e.message, "error");
                     })
-                    .updateInterval(minutes);
+                    .updateInterval(m);
             }
 
-            // ---- trigger on/off ----
+            // ---- trigger ----
             function activateTrigger() {
                 google.script.run
                     .withSuccessHandler(function () {
@@ -2120,7 +2659,6 @@
                     })
                     .activateTrigger();
             }
-
             function deactivateTrigger() {
                 if (!confirm("Stop auto-run?")) return;
                 google.script.run
@@ -2142,7 +2680,7 @@
                             return;
                         }
                         el.innerHTML = logs
-                            .map(function (l) {
+                            .map(function (l, i) {
                                 var d = new Date(l.ts);
                                 var time =
                                     d.toLocaleDateString() +
@@ -2163,23 +2701,86 @@
                                               : l.action === "WARN"
                                                 ? "var(--warning)"
                                                 : "var(--success)";
-                                return (
-                                    '<div class="log-entry"><span class="log-time">' +
-                                    time +
-                                    '</span><span style="color:' +
-                                    col +
-                                    ';font-weight:600;">' +
-                                    esc(l.action) +
-                                    '</span><span class="log-detail"><strong>' +
-                                    esc(l.from) +
-                                    "</strong> — " +
-                                    esc(l.subject) +
-                                    "</span></div>"
-                                );
+
+                                // conditions detail
+                                var condDetail = "";
+                                if (l.conditions && l.conditions.length) {
+                                    condDetail = (l.conditions || [])
+                                        .map(function (c) {
+                                            var cls = c.matched
+                                                ? "pass"
+                                                : "fail";
+                                            var sym = c.matched ? "✓" : "✗";
+                                            return (
+                                                '<div class="log-cond"><span class="cond-check ' +
+                                                cls +
+                                                '">' +
+                                                sym +
+                                                '</span><span class="pill pill-field" style="font-size:10px;">' +
+                                                c.field +
+                                                '</span><span style="font-family:monospace;font-size:11px;color:#a98cff;">' +
+                                                esc(c.pattern) +
+                                                "</span></div>"
+                                            );
+                                        })
+                                        .join("");
+                                }
+
+                                var bodySection = l.body
+                                    ? '<div class="log-expand-section"><div class="log-expand-label">Body preview</div><div class="log-body-text">' +
+                                      esc(l.body) +
+                                      "</div></div>"
+                                    : "";
+
+                                var expandHTML = [
+                                    '<div class="log-expand" id="log-exp-' +
+                                        i +
+                                        '">',
+                                    '<div class="log-expand-section"><div class="log-expand-label">Rule</div><div style="color:var(--text);">' +
+                                        esc(l.ruleName || "") +
+                                        "</div></div>",
+                                    condDetail
+                                        ? '<div class="log-expand-section"><div class="log-expand-label">Conditions (' +
+                                          (l.logic || "AND") +
+                                          ")</div>" +
+                                          condDetail +
+                                          "</div>"
+                                        : "",
+                                    bodySection,
+                                    "</div>",
+                                ].join("");
+
+                                return [
+                                    '<div class="log-entry" onclick="toggleLogExpand(' +
+                                        i +
+                                        ')">',
+                                    '<div class="log-entry-header">',
+                                    '<span class="log-time">' +
+                                        time +
+                                        "</span>",
+                                    '<span style="color:' +
+                                        col +
+                                        ';font-weight:600;">' +
+                                        esc(l.action) +
+                                        "</span>",
+                                    '<span class="log-detail"><strong>' +
+                                        esc(l.from) +
+                                        "</strong> — " +
+                                        esc(l.subject) +
+                                        "</span>",
+                                    "</div>",
+                                    expandHTML,
+                                    "</div>",
+                                ].join("");
                             })
                             .join("");
                     })
                     .getLogs();
+            }
+
+            function toggleLogExpand(i) {
+                var el = document.getElementById("log-exp-" + i);
+                if (el) el.classList.toggle("open");
             }
 
             function clearLog() {
@@ -2193,31 +2794,9 @@
                     .clearLogs();
             }
 
-            // ---- templates ----
-            function useTemplate(
-                field,
-                pattern,
-                flags,
-                action,
-                label,
-                name,
-                scope,
-            ) {
-                document.getElementById("r-field").value = field;
-                document.getElementById("r-pattern").value = pattern;
-                document.getElementById("r-flags").value = flags;
-                document.getElementById("r-action").value = action;
-                document.getElementById("r-name").value = name || "";
-                document.getElementById("r-label").value = label || "";
-                toggleLabel("r-label-group", "r-action");
-                setScopeChips("scope-group", scope || ["inbox"]);
-                showPage("rules");
-                toast("Template loaded — review and click Add Rule", "info");
-                document.getElementById("r-pattern").focus();
-            }
-
             // ---- init ----
             window.onload = function () {
+                addConditionRow("r"); // start with one empty condition row
                 loadRules();
                 loadStats();
             };
