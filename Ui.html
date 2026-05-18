@@ -661,6 +661,7 @@
                 display: flex;
                 gap: 8px;
                 flex-wrap: wrap;
+                justify-content: flex-end;
             }
 
             .section-header {
@@ -1573,9 +1574,6 @@
                         </div>
 
                         <div class="action-strip">
-                            <button class="btn btn-primary" onclick="addRule()">
-                                ＋ Add Rule
-                            </button>
                             <button
                                 class="btn btn-ghost"
                                 onclick="testRuleForm('r', 'r-test-result')"
@@ -1588,6 +1586,9 @@
                                 id="run-btn"
                             >
                                 ▶ Run Now
+                            </button>
+                            <button class="btn btn-primary" onclick="addRule()">
+                                ＋ Add Rule
                             </button>
                         </div>
                         <div class="test-result" id="r-test-result"></div>
