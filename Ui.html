@@ -1142,19 +1142,22 @@
                 background: var(--bg2);
                 border: 1px solid var(--border2);
                 border-radius: 14px;
-                padding: 26px;
-                width: 580px;
+                width: min(980px, calc(100vw - 32px));
                 max-width: 100%;
-                max-height: calc(100vh - 40px);
-                overflow-y: auto;
+                max-height: calc(100vh - 32px);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
             }
             .modal-title {
                 font-size: 16px;
                 font-weight: 600;
-                margin-bottom: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                gap: 12px;
+                padding: 24px 26px 18px;
+                border-bottom: 1px solid var(--border);
             }
             .modal-close {
                 cursor: pointer;
@@ -1168,14 +1171,47 @@
             .modal-close:hover {
                 color: var(--text);
             }
+            .modal-body {
+                padding: 22px 26px 24px;
+                overflow-y: auto;
+            }
             .modal-footer {
                 display: flex;
                 gap: 10px;
                 justify-content: flex-end;
                 margin-top: 20px;
-                padding-top: 16px;
+                padding: 16px 26px 22px;
                 border-top: 1px solid var(--border);
                 flex-wrap: wrap;
+            }
+            .modal-body .conditions-list {
+                max-height: min(42vh, 460px);
+                overflow-y: auto;
+                padding-right: 4px;
+            }
+
+            @media (max-width: 700px) {
+                .modal-overlay {
+                    padding: 8px;
+                    align-items: stretch;
+                }
+                .modal {
+                    width: 100%;
+                    max-height: 100%;
+                    border-radius: 12px;
+                }
+                .modal-title {
+                    padding: 18px 18px 14px;
+                }
+                .modal-body {
+                    padding: 18px;
+                }
+                .modal-footer {
+                    padding: 14px 18px 18px;
+                }
+                .modal-body .conditions-list {
+                    max-height: none;
+                }
             }
 
             .guide-table {
@@ -1914,142 +1950,164 @@
                         ✕
                     </button>
                 </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="field-label">Rule Name</label>
-                        <input type="text" id="e-name" />
-                    </div>
-                    <div class="form-group">
-                        <label class="field-label">Action</label>
-                        <select
-                            id="e-action"
-                            onchange="toggleLabel('e-label-group', 'e-action')"
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="field-label">Rule Name</label>
+                            <input type="text" id="e-name" />
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Action</label>
+                            <select
+                                id="e-action"
+                                onchange="
+                                    toggleLabel('e-label-group', 'e-action')
+                                "
+                            >
+                                <option value="trash">🗑️ Move to Trash</option>
+                                <option value="delete">
+                                    🔥 Permanently Delete
+                                </option>
+                                <option value="archive">📦 Archive</option>
+                                <option value="label">🏷️ Add Label</option>
+                                <option value="label+archive">
+                                    🏷️ Label + Archive
+                                </option>
+                                <option value="trash+label">
+                                    🗑️ Trash + Label
+                                </option>
+                                <option value="star">⭐ Star</option>
+                                <option value="markread">
+                                    ✅ Mark as Read
+                                </option>
+                            </select>
+                        </div>
+                        <div
+                            class="form-group"
+                            id="e-label-group"
+                            style="display: none"
                         >
-                            <option value="trash">🗑️ Move to Trash</option>
-                            <option value="delete">
-                                🔥 Permanently Delete
-                            </option>
-                            <option value="archive">📦 Archive</option>
-                            <option value="label">🏷️ Add Label</option>
-                            <option value="label+archive">
-                                🏷️ Label + Archive
-                            </option>
-                            <option value="trash+label">
-                                🗑️ Trash + Label
-                            </option>
-                            <option value="star">⭐ Star</option>
-                            <option value="markread">✅ Mark as Read</option>
-                        </select>
-                    </div>
-                    <div
-                        class="form-group"
-                        id="e-label-group"
-                        style="display: none"
-                    >
-                        <label class="field-label">Label Name</label>
-                        <input type="text" id="e-label" />
-                    </div>
-                    <div class="form-group form-full">
-                        <label class="field-label">Scan Scope</label>
-                        <div class="scope-group" id="e-scope-group">
-                            <label class="scope-chip" id="e-chip-inbox"
-                                ><input
-                                    type="checkbox"
-                                    value="inbox"
-                                    onchange="syncChip(this, 'e-scope-group')"
-                                />
-                                📥 Inbox</label
-                            >
-                            <label class="scope-chip" id="e-chip-spam"
-                                ><input
-                                    type="checkbox"
-                                    value="spam"
-                                    onchange="syncChip(this, 'e-scope-group')"
-                                />
-                                🚫 Spam</label
-                            >
-                            <label class="scope-chip danger" id="e-chip-trash"
-                                ><input
-                                    type="checkbox"
-                                    value="trash"
-                                    onchange="syncChip(this, 'e-scope-group')"
-                                />
-                                🗑️ Trash</label
-                            >
-                            <label class="scope-chip" id="e-chip-sent"
-                                ><input
-                                    type="checkbox"
-                                    value="sent"
-                                    onchange="syncChip(this, 'e-scope-group')"
-                                />
-                                📤 Sent</label
-                            >
-                            <label class="scope-chip" id="e-chip-anywhere"
-                                ><input
-                                    type="checkbox"
-                                    value="anywhere"
-                                    onchange="
-                                        handleAnywhere(this, 'e-scope-group')
-                                    "
-                                />
-                                🌐 Everywhere</label
-                            >
+                            <label class="field-label">Label Name</label>
+                            <input type="text" id="e-label" />
+                        </div>
+                        <div class="form-group form-full">
+                            <label class="field-label">Scan Scope</label>
+                            <div class="scope-group" id="e-scope-group">
+                                <label class="scope-chip" id="e-chip-inbox"
+                                    ><input
+                                        type="checkbox"
+                                        value="inbox"
+                                        onchange="
+                                            syncChip(this, 'e-scope-group')
+                                        "
+                                    />
+                                    📥 Inbox</label
+                                >
+                                <label class="scope-chip" id="e-chip-spam"
+                                    ><input
+                                        type="checkbox"
+                                        value="spam"
+                                        onchange="
+                                            syncChip(this, 'e-scope-group')
+                                        "
+                                    />
+                                    🚫 Spam</label
+                                >
+                                <label
+                                    class="scope-chip danger"
+                                    id="e-chip-trash"
+                                    ><input
+                                        type="checkbox"
+                                        value="trash"
+                                        onchange="
+                                            syncChip(this, 'e-scope-group')
+                                        "
+                                    />
+                                    🗑️ Trash</label
+                                >
+                                <label class="scope-chip" id="e-chip-sent"
+                                    ><input
+                                        type="checkbox"
+                                        value="sent"
+                                        onchange="
+                                            syncChip(this, 'e-scope-group')
+                                        "
+                                    />
+                                    📤 Sent</label
+                                >
+                                <label class="scope-chip" id="e-chip-anywhere"
+                                    ><input
+                                        type="checkbox"
+                                        value="anywhere"
+                                        onchange="
+                                            handleAnywhere(
+                                                this,
+                                                'e-scope-group',
+                                            )
+                                        "
+                                    />
+                                    🌐 Everywhere</label
+                                >
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div style="margin-bottom: 12px">
-                    <div
-                        style="
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                            margin-bottom: 8px;
-                            flex-wrap: wrap;
-                            gap: 8px;
-                        "
-                    >
-                        <label class="field-label">Conditions</label>
-                        <div class="logic-toggle">
-                            <span>Match:</span>
-                            <button
-                                class="logic-btn active-and"
-                                id="e-logic-and"
-                                onclick="setLogic('e', 'AND')"
-                            >
-                                AND
-                            </button>
-                            <button
-                                class="logic-btn"
-                                id="e-logic-or"
-                                onclick="setLogic('e', 'OR')"
-                            >
-                                OR
-                            </button>
-                            <span style="font-size: 11px" id="e-logic-hint"
-                                >all must match</span
-                            >
+                    <div style="margin-bottom: 12px">
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                margin-bottom: 8px;
+                                flex-wrap: wrap;
+                                gap: 8px;
+                            "
+                        >
+                            <label class="field-label">Conditions</label>
+                            <div class="logic-toggle">
+                                <span>Match:</span>
+                                <button
+                                    class="logic-btn active-and"
+                                    id="e-logic-and"
+                                    onclick="setLogic('e', 'AND')"
+                                >
+                                    AND
+                                </button>
+                                <button
+                                    class="logic-btn"
+                                    id="e-logic-or"
+                                    onclick="setLogic('e', 'OR')"
+                                >
+                                    OR
+                                </button>
+                                <span style="font-size: 11px" id="e-logic-hint"
+                                    >all must match</span
+                                >
+                            </div>
                         </div>
+                        <div
+                            class="conditions-list"
+                            id="e-conditions-list"
+                        ></div>
+                        <button
+                            class="add-condition-btn"
+                            onclick="addConditionRow('e')"
+                        >
+                            ＋ Add Condition
+                        </button>
                     </div>
-                    <div class="conditions-list" id="e-conditions-list"></div>
-                    <button
-                        class="add-condition-btn"
-                        onclick="addConditionRow('e')"
-                    >
-                        ＋ Add Condition
-                    </button>
-                </div>
-                <div style="margin-bottom: 10px">
-                    <button
-                        class="btn btn-ghost btn-sm"
-                        onclick="testRuleForm('e', 'e-test-result')"
-                    >
-                        🔍 Test Pattern
-                    </button>
-                    <div
-                        class="test-result"
-                        id="e-test-result"
-                        style="margin-top: 10px"
-                    ></div>
+                    <div style="margin-bottom: 10px">
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="testRuleForm('e', 'e-test-result')"
+                        >
+                            🔍 Test Pattern
+                        </button>
+                        <div
+                            class="test-result"
+                            id="e-test-result"
+                            style="margin-top: 10px"
+                        ></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-ghost" onclick="closeEditModal()">
