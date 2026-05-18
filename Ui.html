@@ -2151,7 +2151,7 @@
                                         onchange="
                                             handleAnywhere(
                                                 this,
-                                                'e-scope-group'
+                                                'e-scope-group',
                                             )
                                         "
                                     />
@@ -2243,8 +2243,7 @@
                             class="pattern-editor-hint"
                             id="pattern-modal-hint"
                         >
-                            Use the larger editor for long patterns or
-                            regex.
+                            Use the larger editor for long patterns or regex.
                         </div>
                     </div>
                     <textarea
@@ -2331,16 +2330,17 @@
             }
 
             function getFlagOptionsHTML(mode, selected) {
-                var options = mode === "regex"
-                    ? [
-                          { v: "i", l: "case insensitive" },
-                          { v: "", l: "case sensitive" },
-                          { v: "im", l: "multiline" },
-                      ]
-                    : [
-                          { v: "i", l: "case insensitive" },
-                          { v: "", l: "case sensitive" },
-                      ];
+                var options =
+                    mode === "regex"
+                        ? [
+                              { v: "i", l: "case insensitive" },
+                              { v: "", l: "case sensitive" },
+                              { v: "im", l: "multiline" },
+                          ]
+                        : [
+                              { v: "i", l: "case insensitive" },
+                              { v: "", l: "case sensitive" },
+                          ];
                 return options
                     .map(function (o) {
                         return (
@@ -2364,7 +2364,9 @@
                 var row = input.closest(".condition-row");
                 syncConditionModeUI(row);
                 var field = row ? row.querySelector(".cond-field").value : "";
-                var mode = row ? row.querySelector(".cond-mode").value : "contains";
+                var mode = row
+                    ? row.querySelector(".cond-mode").value
+                    : "contains";
                 var regexOn = mode === "regex";
                 var hasEmail = val.indexOf("@") !== -1;
                 var hasUnescapedDot = /(?<!\\)\./.test(val);
@@ -2485,7 +2487,7 @@
                     "')\">⤢</button>" +
                     "</div>" +
                     '<div class="condition-options">' +
-                    '<select class="cond-mode" onchange="checkPatternHint(this.closest(\'.condition-row\').querySelector(\'.cond-pattern\'),\'' +
+                    "<select class=\"cond-mode\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
                     "')\">" +
                     modeOpts +
@@ -2834,7 +2836,9 @@
                                     esc(c.pattern) +
                                     '</span><span class="pill pill-scope">' +
                                     esc(
-                                        modeLabel(c.mode || "contains").toUpperCase(),
+                                        modeLabel(
+                                            c.mode || "contains",
+                                        ).toUpperCase(),
                                     ) +
                                     "</span></div>"
                                 );
