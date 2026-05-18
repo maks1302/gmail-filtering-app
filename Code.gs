@@ -19,6 +19,10 @@ var MAX_LOG = 25; // prefer fewer, richer entries so rule/body details survive
 // ------------------------------------------------------------
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("Ui")
+    .addMetaTag(
+      "viewport",
+      "width=device-width, initial-scale=1, viewport-fit=cover",
+    )
     .setTitle("Gmail Filter Rules")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

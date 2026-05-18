@@ -72,6 +72,7 @@
                 .main {
                     margin-left: 0;
                     padding: 16px;
+                    width: 100%;
                 }
                 .stats-row {
                     grid-template-columns: 1fr 1fr;
@@ -88,11 +89,43 @@
                 .topbar {
                     display: flex !important;
                 }
-                .condition-row {
+                .condition-main {
+                    flex-wrap: wrap;
+                    align-items: stretch;
+                }
+                .condition-main select {
+                    min-width: 0;
+                }
+                .condition-pattern-wrap {
+                    min-width: 100%;
+                }
+                .condition-options {
+                    width: 100%;
+                    margin-left: 0;
+                    justify-content: space-between;
+                    gap: 8px;
                     flex-wrap: wrap;
                 }
+                .cond-flags {
+                    min-width: 0;
+                    flex: 1 1 170px;
+                }
+                .condition-remove {
+                    margin-left: auto;
+                }
+                .rule-card {
+                    padding: 14px;
+                }
+                .rule-card-header {
+                    grid-template-columns: auto 1fr;
+                }
                 .rule-actions {
+                    grid-column: 2;
+                    justify-content: flex-end;
                     flex-wrap: wrap;
+                }
+                .action-strip {
+                    justify-content: flex-start;
                 }
                 .log-entry-header {
                     grid-template-columns: 1fr;
@@ -389,6 +422,7 @@
                 display: flex;
                 align-items: stretch;
                 gap: 8px;
+                margin-right: 4px;
             }
             .condition-pattern-wrap .cond-pattern {
                 flex: 1;
@@ -419,6 +453,7 @@
                 gap: 10px;
                 margin-left: auto;
                 flex-shrink: 0;
+                padding-left: 2px;
             }
             .regex-check {
                 display: inline-flex;
@@ -712,7 +747,8 @@
                 opacity: 0.4;
             }
             .rule-card-header {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto auto minmax(0, 1fr) auto;
                 align-items: flex-start;
                 gap: 12px;
             }
@@ -757,15 +793,16 @@
             }
             .rule-conditions {
                 display: flex;
-                flex-direction: column;
-                gap: 4px;
+                flex-wrap: wrap;
+                gap: 6px 8px;
                 margin-bottom: 8px;
             }
             .rule-cond-row {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
                 gap: 6px;
                 flex-wrap: wrap;
+                min-width: 0;
             }
             .rule-meta {
                 display: flex;
@@ -778,6 +815,7 @@
                 flex-shrink: 0;
                 flex-wrap: wrap;
                 align-items: flex-start;
+                justify-content: flex-end;
             }
             .drag-handle {
                 width: 18px;
@@ -811,30 +849,6 @@
             .drag-handle:active {
                 cursor: grabbing;
             }
-            .order-btns {
-                display: flex;
-                flex-direction: column;
-                gap: 3px;
-            }
-            .order-btn {
-                background: var(--bg3);
-                border: 1px solid var(--border);
-                border-radius: 5px;
-                color: var(--muted);
-                cursor: pointer;
-                font-size: 11px;
-                padding: 2px 6px;
-                line-height: 1.4;
-                transition: all 0.15s;
-            }
-            .order-btn:hover {
-                background: var(--border2);
-                color: var(--text);
-            }
-            .order-btn:disabled {
-                opacity: 0.25;
-                cursor: not-allowed;
-            }
 
             .pill {
                 display: inline-flex;
@@ -854,6 +868,9 @@
                 font-family: monospace;
                 font-size: 11px;
                 font-weight: 400;
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
             .pill-action {
                 background: rgba(255, 79, 106, 0.12);
@@ -1516,7 +1533,7 @@
                                             onchange="
                                                 handleAnywhere(
                                                     this,
-                                                    'r-scope-group',
+                                                    'r-scope-group'
                                                 )
                                             "
                                         />
@@ -2112,7 +2129,7 @@
                                         onchange="
                                             handleAnywhere(
                                                 this,
-                                                'e-scope-group',
+                                                'e-scope-group'
                                             )
                                         "
                                     />
@@ -2749,7 +2766,7 @@
                     return;
                 }
                 el.innerHTML = rules
-                    .map(function (r, idx) {
+                    .map(function (r) {
                         var ac = actionClass(r.action);
                         var lp = r.label ? ": " + r.label : "";
                         var disabled = r.enabled === false;
@@ -2826,18 +2843,6 @@
                             "</div>",
                             "</div>",
                             '<div class="rule-actions">',
-                            '<div class="order-btns">',
-                            '<button class="order-btn" onclick="moveRule(\'' +
-                                r.id +
-                                "','up')\"   " +
-                                (idx === 0 ? "disabled" : "") +
-                                ">↑</button>",
-                            '<button class="order-btn" onclick="moveRule(\'' +
-                                r.id +
-                                "','down')\" " +
-                                (idx === rules.length - 1 ? "disabled" : "") +
-                                ">↓</button>",
-                            "</div>",
                             '<button class="btn btn-debug  btn-sm" onclick="debugRule(\'' +
                                 r.id +
                                 "')\">🐛</button>",
