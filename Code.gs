@@ -249,7 +249,7 @@ function evaluateConditions(msg, rule) {
       field: cond.field,
       pattern: cond.pattern,
       flags: cond.flags || "i",
-      mode: cond.mode || "exact",
+      mode: cond.mode || "contains",
       matched: matched,
       actualValue: makeSnippet(actualValue, 120),
     };
@@ -465,11 +465,16 @@ function getFieldValue(msg, field) {
 
 function normalizeCondition(cond) {
   cond = cond || {};
+  var mode = cond.mode || "contains";
+  if (mode === "exact") mode = "contains";
   return {
     field: cond.field || "subject",
     pattern: String(cond.pattern || ""),
     flags: typeof cond.flags === "string" ? cond.flags : "i",
-    mode: cond.mode === "regex" ? "regex" : "exact",
+    mode:
+      mode === "regex" || mode === "equals" || mode === "contains"
+        ? mode
+        : "contains",
   };
 }
 
@@ -496,12 +501,23 @@ function escapeRegexLiteral(value) {
 function matchCondition(actualValue, cond) {
   var pattern = String(cond.pattern || "");
   var flags = cond.flags || "i";
-  var mode = cond.mode || "exact";
-  var regex = new RegExp(
-    mode === "regex" ? pattern : escapeRegexLiteral(pattern),
-    flags,
-  );
-  return regex.test(String(actualValue || ""));
+  var mode = cond.mode || "contains";
+  var actual = String(actualValue || "");
+
+  if (mode === "regex") {
+    return new RegExp(pattern, flags).test(actual);
+  }
+
+  if (flags.indexOf("i") !== -1) {
+    actual = actual.toLowerCase();
+    pattern = pattern.toLowerCase();
+  }
+
+  if (mode === "equals") {
+    return actual === pattern;
+  }
+
+  return actual.indexOf(pattern) !== -1;
 }
 
 function normalizeLogEntry(entry, ruleMap) {
@@ -523,7 +539,7 @@ function normalizeLogEntry(entry, ruleMap) {
         field: cond.field || "",
         pattern: cond.pattern || "",
         flags: cond.flags || "i",
-        mode: cond.mode || "exact",
+        mode: cond.mode || "contains",
         matched: cond.matched === true,
         actualValue: cond.actualValue || "",
       };

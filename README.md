@@ -7,7 +7,7 @@ It lets you:
 - scan selected Gmail areas like `Inbox`, `Spam`, `Trash`, `Sent`, or `Everywhere`
 - create multi-condition rules using `AND` / `OR`
 - match email `From`, `To`, `Subject`, and `Body`
-- choose between `Exact` matching and `Regex`
+- choose between `Contains`, `Equals`, and `Regex` matching
 - automatically `trash`, `archive`, `label`, `star`, `mark read`, or `delete`
 - review activity logs and debug why a rule matched
 
@@ -19,7 +19,7 @@ You create rules in the UI.
 
 Each rule can contain one or more conditions, for example:
 
-- `From` exactly matches `example.us@gmail.com`
+- `From` equals `example.us@gmail.com`
 - `Body` regex matches `\blet me in\b`
 
 When a message matches a rule, the selected action is applied to that message.
@@ -58,19 +58,22 @@ This app is not usable from the editor alone. Because it serves the interface th
 Recommended setup:
 
 1. Create one simple rule first.
-2. Use `Exact` mode unless you specifically need regex.
+2. Use `Contains` mode unless you specifically need `Equals` or `Regex`.
 3. Use `Test` before enabling a destructive action.
 4. Use `🐛 Debug` if a rule behaves unexpectedly.
 5. Start with `archive`, `label`, or `mark read` before using `trash` or `delete`.
 
 ## Matching Modes
 
-Each condition has two modes:
+Each condition has three modes:
 
-- `Exact`
-  - matches literal text
+- `Contains`
+  - matches when the field includes the text anywhere
   - safest default
-  - good for exact sender emails, fixed phrases, or specific subjects
+  - good for phrases, domains, sender fragments, or subject keywords
+- `Equals`
+  - matches only when the whole field equals the value
+  - useful for strict sender / recipient matching
 - `Regex`
   - uses normal regular expression rules
   - useful for flexible matching patterns
@@ -86,10 +89,10 @@ Case options:
 
 ## Example Rules
 
-Exact sender plus exact phrase:
+Equals sender plus contains phrase:
 
-- `From` → `Exact` → `example.us@gmail.com`
-- `Body` → `Exact` → `let me in`
+- `From` → `Equals` → `example.us@gmail.com`
+- `Body` → `Contains` → `let me in`
 - Logic: `AND`
 
 Regex sender:
@@ -119,7 +122,8 @@ Available actions include:
 
 ## Pattern Tips
 
-- Use `Exact` unless you really need regex.
+- Use `Contains` unless you specifically need `Equals` or `Regex`.
+- Use `Equals` when the whole field must match exactly.
 - In regex, `.` means any character.
 - In regex, `\.` means a literal dot.
 - For body rules, be careful with replies: old quoted text can still appear in the body.

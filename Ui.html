@@ -477,31 +477,8 @@
                 flex-shrink: 0;
                 padding-left: 2px;
             }
-            .regex-check {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--muted);
-                font-size: 12px;
-                font-weight: 600;
-                white-space: nowrap;
-                cursor: pointer;
-                user-select: none;
-                flex-shrink: 0;
-            }
-            .regex-check input {
-                width: 14px;
-                height: 14px;
-                accent-color: var(--warning);
-                cursor: pointer;
-                flex: 0 0 auto;
-            }
-            .regex-check span {
-                display: inline-block;
-                line-height: 1;
-            }
-            .regex-check.on {
-                color: var(--text);
+            .cond-mode {
+                min-width: 110px;
             }
             .cond-flags {
                 min-width: 150px;
@@ -1638,9 +1615,9 @@
                             <div class="section-title">Your Rules</div>
                             <div class="section-note">
                                 ⚠️ Rules run top-to-bottom — order matters. Use
-                                drag & drop or ↑↓ to reorder.<br />🐛 Use the
-                                Debug button to see exactly why a rule matches
-                                or doesn't.
+                                drag & drop to reorder.<br />🐛 Use the Debug
+                                button to see exactly why a rule matches or
+                                doesn't.
                             </div>
                         </div>
                     </div>
@@ -1801,13 +1778,13 @@
                                         margin-bottom: 6px;
                                     "
                                 >
-                                    🧭 Exact vs Regex
+                                    🧭 Contains vs Equals vs Regex
                                 </div>
                                 <div style="color: var(--muted)">
-                                    Every condition starts in
-                                    <strong>Exact</strong> mode. Turn on the
-                                    <strong>Regex</strong> toggle only when you
-                                    want pattern matching.
+                                    Use <strong>Contains</strong> for simple
+                                    text matches, <strong>Equals</strong> when
+                                    the whole field must match, and
+                                    <strong>Regex</strong> for pattern matching.
                                 </div>
                                 <div
                                     style="
@@ -1825,7 +1802,7 @@
                                                 margin-bottom: 3px;
                                             "
                                         >
-                                            ✓ Exact mode
+                                            ✓ Contains mode
                                         </div>
                                         <span class="mono"
                                             >example.us@gmail.com</span
@@ -1837,7 +1814,30 @@
                                                 margin-top: 3px;
                                             "
                                         >
-                                            From matches this exact sender
+                                            From contains this sender text
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div
+                                            style="
+                                                color: var(--warning);
+                                                font-size: 11px;
+                                                margin-bottom: 3px;
+                                            "
+                                        >
+                                            ✓ Equals mode
+                                        </div>
+                                        <span class="mono"
+                                            >example.us@gmail.com</span
+                                        >
+                                        <div
+                                            style="
+                                                color: var(--muted);
+                                                font-size: 11px;
+                                                margin-top: 3px;
+                                            "
+                                        >
+                                            From must equal this full value
                                         </div>
                                     </div>
                                     <div>
@@ -1894,8 +1894,8 @@
                                     <span class="mono">.</span> means any
                                     character and <span class="mono">\.</span>
                                     means a literal dot. In
-                                    <strong>Exact</strong> mode, text is matched
-                                    literally.
+                                    <strong>Contains</strong> mode, text is
+                                    matched literally as a substring.
                                 </div>
                             </div>
                             <div
@@ -1946,19 +1946,19 @@
                                 <th>Example</th>
                             </tr>
                             <tr>
-                                <td>Exact</td>
+                                <td>Contains</td>
                                 <td class="mono">hello</td>
-                                <td>Literal text match</td>
+                                <td>Field contains this text</td>
                                 <td style="color: var(--muted)">
                                     Good for simple subject/body phrases
                                 </td>
                             </tr>
                             <tr>
-                                <td>Exact</td>
+                                <td>Equals</td>
                                 <td class="mono">example.us@gmail.com</td>
-                                <td>Exact sender email</td>
+                                <td>Whole field equals this value</td>
                                 <td style="color: var(--muted)">
-                                    Safe default for From / To
+                                    Useful for strict sender / recipient checks
                                 </td>
                             </tr>
                             <tr>
@@ -2151,7 +2151,7 @@
                                         onchange="
                                             handleAnywhere(
                                                 this,
-                                                'e-scope-group',
+                                                'e-scope-group'
                                             )
                                         "
                                     />
@@ -2243,7 +2243,7 @@
                             class="pattern-editor-hint"
                             id="pattern-modal-hint"
                         >
-                            Use the larger editor for long exact strings or
+                            Use the larger editor for long patterns or
                             regex.
                         </div>
                     </div>
@@ -2319,20 +2319,19 @@
             // ---- pattern helper ----
             function syncConditionModeUI(row) {
                 if (!row) return;
-                var toggle = row.querySelector(".cond-mode-toggle");
-                var wrap = row.querySelector(".regex-check");
+                var modeSelect = row.querySelector(".cond-mode");
                 var flags = row.querySelector(".cond-flags");
-                var on = toggle && toggle.checked;
-                if (wrap) wrap.classList.toggle("on", !!on);
+                var mode = modeSelect ? modeSelect.value : "contains";
+                var regexOn = mode === "regex";
                 if (flags) {
                     var selected = flags.value;
-                    flags.innerHTML = getFlagOptionsHTML(on, selected);
-                    if (!on && flags.value === "im") flags.value = "i";
+                    flags.innerHTML = getFlagOptionsHTML(mode, selected);
+                    if (!regexOn && flags.value === "im") flags.value = "i";
                 }
             }
 
-            function getFlagOptionsHTML(regexOn, selected) {
-                var options = regexOn
+            function getFlagOptionsHTML(mode, selected) {
+                var options = mode === "regex"
                     ? [
                           { v: "i", l: "case insensitive" },
                           { v: "", l: "case sensitive" },
@@ -2365,17 +2364,20 @@
                 var row = input.closest(".condition-row");
                 syncConditionModeUI(row);
                 var field = row ? row.querySelector(".cond-field").value : "";
-                var regexOn = row
-                    ? row.querySelector(".cond-mode-toggle").checked
-                    : false;
+                var mode = row ? row.querySelector(".cond-mode").value : "contains";
+                var regexOn = mode === "regex";
                 var hasEmail = val.indexOf("@") !== -1;
                 var hasUnescapedDot = /(?<!\\)\./.test(val);
 
-                if (!regexOn && val) {
+                if (mode === "contains" && val) {
                     el.innerHTML =
                         field === "from" || field === "to"
-                            ? "ℹ️ <strong>Exact</strong> is on. This matches the email text literally."
-                            : "ℹ️ <strong>Exact</strong> is on. This matches plain text exactly as written.";
+                            ? "ℹ️ <strong>Contains</strong> is on. This matches when the email text includes this value."
+                            : "ℹ️ <strong>Contains</strong> is on. This matches when the field includes this text anywhere.";
+                    el.classList.add("show");
+                } else if (mode === "equals" && val) {
+                    el.innerHTML =
+                        "ℹ️ <strong>Equals</strong> is on. The whole field must equal this value, not just contain it.";
                     el.classList.add("show");
                 } else if (
                     regexOn &&
@@ -2438,9 +2440,26 @@
 
                 var warnId = prefix + "-warn-" + idx;
                 var pattern = esc(cond ? cond.pattern : "");
-                var regexOn = cond && cond.mode === "regex";
+                var mode = cond && cond.mode ? cond.mode : "contains";
+                var modeOpts = [
+                    { v: "contains", l: "Contains" },
+                    { v: "equals", l: "Equals" },
+                    { v: "regex", l: "Regex" },
+                ]
+                    .map(function (opt) {
+                        return (
+                            '<option value="' +
+                            opt.v +
+                            '"' +
+                            (mode === opt.v ? " selected" : "") +
+                            ">" +
+                            opt.l +
+                            "</option>"
+                        );
+                    })
+                    .join("");
                 var flagOpts = getFlagOptionsHTML(
-                    regexOn,
+                    mode,
                     cond && typeof cond.flags === "string" ? cond.flags : "i",
                 );
 
@@ -2466,16 +2485,11 @@
                     "')\">⤢</button>" +
                     "</div>" +
                     '<div class="condition-options">' +
-                    '<label class="regex-check' +
-                    (regexOn ? " on" : "") +
-                    '">' +
-                    '<input type="checkbox" class="cond-mode-toggle" ' +
-                    (regexOn ? "checked" : "") +
-                    " onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
+                    '<select class="cond-mode" onchange="checkPatternHint(this.closest(\'.condition-row\').querySelector(\'.cond-pattern\'),\'' +
                     warnId +
                     "')\">" +
-                    "<span>Regex</span>" +
-                    "</label>" +
+                    modeOpts +
+                    "</select>" +
                     '<select class="cond-flags" ' +
                     "onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
                     warnId +
@@ -2504,6 +2518,14 @@
                         : "To";
             }
 
+            function modeLabel(mode) {
+                return mode === "regex"
+                    ? "Regex"
+                    : mode === "equals"
+                      ? "Equals"
+                      : "Contains";
+            }
+
             function addConditionRow(prefix, cond) {
                 var list = document.getElementById(prefix + "-conditions-list");
                 var idx = list.children.length;
@@ -2528,9 +2550,9 @@
                     input.value || "";
 
                 var field = row.querySelector(".cond-field");
-                var regexOn = row.querySelector(".cond-mode-toggle");
+                var mode = row.querySelector(".cond-mode");
                 document.getElementById("pattern-modal-hint").textContent =
-                    (regexOn && regexOn.checked ? "Regex" : "Exact") +
+                    modeLabel(mode ? mode.value : "contains") +
                     " pattern for " +
                     fieldLabel(field ? field.value : "subject") +
                     ". Changes apply only when you Save.";
@@ -2612,9 +2634,7 @@
                 return Array.from(rows).map(function (row) {
                     return {
                         field: row.querySelector(".cond-field").value,
-                        mode: row.querySelector(".cond-mode-toggle").checked
-                            ? "regex"
-                            : "exact",
+                        mode: row.querySelector(".cond-mode").value,
                         pattern: row
                             .querySelector(".cond-pattern")
                             .value.trim(),
@@ -2813,7 +2833,9 @@
                                     '</span><span class="pill pill-pattern">' +
                                     esc(c.pattern) +
                                     '</span><span class="pill pill-scope">' +
-                                    esc((c.mode || "exact").toUpperCase()) +
+                                    esc(
+                                        modeLabel(c.mode || "contains").toUpperCase(),
+                                    ) +
                                     "</span></div>"
                                 );
                             })
@@ -3047,8 +3069,8 @@
                                             "</span>" +
                                             '<span class="pill pill-scope" style="font-size:10px;">' +
                                             esc(
-                                                (
-                                                    c.mode || "exact"
+                                                modeLabel(
+                                                    c.mode || "contains",
                                                 ).toUpperCase(),
                                             ) +
                                             "</span>" +
@@ -3340,8 +3362,8 @@
                                                 "</span>" +
                                                 '<span class="pill pill-scope" style="font-size:10px;">' +
                                                 esc(
-                                                    (
-                                                        c.mode || "exact"
+                                                    modeLabel(
+                                                        c.mode || "contains",
                                                     ).toUpperCase(),
                                                 ) +
                                                 "</span>" +
@@ -3520,8 +3542,9 @@
                                                     "</span>" +
                                                     '<span class="pill pill-scope" style="font-size:10px;">' +
                                                     esc(
-                                                        (
-                                                            c.mode || "exact"
+                                                        modeLabel(
+                                                            c.mode ||
+                                                                "contains",
                                                         ).toUpperCase(),
                                                     ) +
                                                     "</span>" +
