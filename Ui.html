@@ -117,21 +117,29 @@
                     padding: 14px;
                 }
                 .rule-card-header {
-                    grid-template-columns: auto auto 1fr;
-                    align-items: center;
+                    grid-template-columns: 18px minmax(0, 1fr);
+                    align-items: start;
+                    column-gap: 12px;
+                    row-gap: 10px;
                 }
                 .drag-handle {
                     min-height: 0;
+                    grid-column: 1;
+                    grid-row: 1 / span 2;
+                    align-self: stretch;
                 }
                 .rule-toggle {
                     margin-top: 0;
+                    grid-column: 2;
+                    grid-row: 1;
+                    justify-self: start;
                 }
                 .rule-body {
-                    grid-column: 1 / -1;
+                    grid-column: 2;
                     grid-row: 2;
                 }
                 .rule-actions {
-                    grid-column: 3;
+                    grid-column: 2;
                     grid-row: 1;
                     justify-content: flex-end;
                     flex-wrap: wrap;
