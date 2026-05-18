@@ -117,7 +117,7 @@
                     padding: 14px;
                 }
                 .rule-card-header {
-                    grid-template-columns: 18px minmax(0, 1fr);
+                    grid-template-columns: 18px auto minmax(0, 1fr) auto;
                     align-items: start;
                     column-gap: 12px;
                     row-gap: 10px;
@@ -135,15 +135,16 @@
                     justify-self: start;
                 }
                 .rule-body {
-                    grid-column: 2;
+                    grid-column: 2 / 5;
                     grid-row: 2;
                 }
                 .rule-actions {
-                    grid-column: 2;
+                    grid-column: 4;
                     grid-row: 1;
                     justify-content: flex-end;
                     flex-wrap: wrap;
                     align-items: center;
+                    justify-self: end;
                 }
                 .action-strip {
                     justify-content: flex-start;
