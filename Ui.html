@@ -386,6 +386,32 @@
             .condition-pattern-wrap {
                 flex: 2;
                 min-width: 100px;
+                display: flex;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .condition-pattern-wrap .cond-pattern {
+                flex: 1;
+            }
+            .pattern-expand-btn {
+                flex: 0 0 auto;
+                width: 36px;
+                border-radius: 7px;
+                border: 1px solid var(--border);
+                background: rgba(255, 255, 255, 0.03);
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 15px;
+                line-height: 1;
+                transition:
+                    border-color 0.15s,
+                    color 0.15s,
+                    background 0.15s;
+            }
+            .pattern-expand-btn:hover {
+                color: var(--text);
+                border-color: var(--accent);
+                background: rgba(79, 124, 255, 0.08);
             }
             .condition-options {
                 display: inline-flex;
@@ -1189,6 +1215,43 @@
                 overflow-y: auto;
                 padding-right: 4px;
             }
+            .pattern-editor {
+                width: min(920px, calc(100vw - 32px));
+            }
+            .pattern-editor .modal-body {
+                padding-top: 18px;
+            }
+            .pattern-editor-meta {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+            }
+            .pattern-editor-hint {
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .pattern-editor-textarea {
+                width: 100%;
+                min-height: min(46vh, 420px);
+                resize: vertical;
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                color: var(--text);
+                padding: 14px 16px;
+                font-size: 13px;
+                line-height: 1.55;
+                font-family:
+                    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                    "Liberation Mono", monospace;
+                outline: none;
+            }
+            .pattern-editor-textarea:focus {
+                border-color: var(--accent);
+            }
 
             @media (max-width: 700px) {
                 .modal-overlay {
@@ -1211,6 +1274,12 @@
                 }
                 .modal-body .conditions-list {
                     max-height: none;
+                }
+                .pattern-editor {
+                    width: 100%;
+                }
+                .pattern-editor-textarea {
+                    min-height: 40vh;
                 }
             }
 
@@ -2120,6 +2189,44 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="pattern-modal">
+            <div class="modal pattern-editor">
+                <div class="modal-title">
+                    <span>📝 Edit Pattern</span>
+                    <button class="modal-close" onclick="closePatternModal()">
+                        ✕
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="pattern-editor-meta">
+                        <div
+                            class="pattern-editor-hint"
+                            id="pattern-modal-hint"
+                        >
+                            Use the larger editor for long exact strings or
+                            regex.
+                        </div>
+                    </div>
+                    <textarea
+                        id="pattern-editor-input"
+                        class="pattern-editor-textarea"
+                        spellcheck="false"
+                    ></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" onclick="closePatternModal()">
+                        Cancel
+                    </button>
+                    <button
+                        class="btn btn-primary"
+                        onclick="applyPatternModal()"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="toast" id="toast"></div>
 
         <script>
@@ -2128,6 +2235,7 @@
             var editingRuleId = null;
             var logicState = { r: "AND", e: "AND" };
             var draggedRuleId = null;
+            var activePatternInput = null;
 
             // ---- mobile ----
             function toggleSidebar() {
@@ -2313,6 +2421,9 @@
                     '" oninput="checkPatternHint(this,\'' +
                     warnId +
                     "')\">" +
+                    '<button class="pattern-expand-btn" type="button" title="Open larger pattern editor" onclick="openPatternModal(this,\'' +
+                    warnId +
+                    "')\">⤢</button>" +
                     "</div>" +
                     '<div class="condition-options">' +
                     '<label class="regex-check' +
@@ -2364,6 +2475,54 @@
                 var inp = newRow.querySelector(".cond-pattern");
                 var warnId = prefix + "-warn-" + idx;
                 if (inp) checkPatternHint(inp, warnId);
+            }
+
+            function openPatternModal(btn, warnId) {
+                var row = btn.closest(".condition-row");
+                if (!row) return;
+                var input = row.querySelector(".cond-pattern");
+                if (!input) return;
+
+                activePatternInput = input;
+                document.getElementById("pattern-editor-input").value =
+                    input.value || "";
+
+                var field = row.querySelector(".cond-field");
+                var regexOn = row.querySelector(".cond-mode-toggle");
+                document.getElementById("pattern-modal-hint").textContent =
+                    (regexOn && regexOn.checked ? "Regex" : "Exact") +
+                    " pattern for " +
+                    fieldLabel(field ? field.value : "subject") +
+                    ". Changes apply only when you Save.";
+
+                var modal = document.getElementById("pattern-modal");
+                modal.dataset.warnId = warnId || "";
+                modal.classList.add("open");
+                setTimeout(function () {
+                    document.getElementById("pattern-editor-input").focus();
+                }, 0);
+            }
+
+            function closePatternModal() {
+                document
+                    .getElementById("pattern-modal")
+                    .classList.remove("open");
+                document.getElementById("pattern-modal").dataset.warnId = "";
+                activePatternInput = null;
+            }
+
+            function applyPatternModal() {
+                if (!activePatternInput) {
+                    closePatternModal();
+                    return;
+                }
+                var modal = document.getElementById("pattern-modal");
+                activePatternInput.value = document.getElementById(
+                    "pattern-editor-input",
+                ).value;
+                var warnId = modal.dataset.warnId || "";
+                if (warnId) checkPatternHint(activePatternInput, warnId);
+                closePatternModal();
             }
 
             function removeConditionRow(btn, prefix) {
