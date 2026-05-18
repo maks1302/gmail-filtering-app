@@ -1,7 +1,7 @@
 # Gmail Filter App
 
 A Google Apps Script app for building custom Gmail filtering rules with a simple UI.
-
+![UI](ui.jpg)
 It lets you:
 
 - scan selected Gmail areas like `Inbox`, `Spam`, `Trash`, `Sent`, or `Everywhere`
