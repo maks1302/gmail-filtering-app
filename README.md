@@ -36,12 +36,22 @@ Rules run from top to bottom, so order matters.
 4. Save the project.
 5. Enable the Gmail advanced service if you are prompted to do so.
    - In Apps Script: `Services` → add `Gmail API`
-6. Run the app once from Apps Script so Google can request permissions.
-7. Authorize access to your Gmail.
-8. Open the web app UI and create your rules.
-9. Activate auto-run so it keeps working in the background.
+6. Deploy the project as a web app.
+   - In Apps Script: `Deploy` → `New deployment`
+   - Select type: `Web app`
+   - Execute as: `Me`
+   - Who has access: your preferred setting for your account and usage
+7. Open the deployed web app URL once to confirm the UI loads.
+8. Run the app once from Apps Script so Google can request permissions.
+9. Authorize access to your Gmail.
+10. Open the deployed web app UI and create your rules.
+11. Activate auto-run so it keeps working in the background.
 
 After authorization, it can run silently in the background on the configured schedule.
+
+## Deploy Notes
+
+This app is not usable from the editor alone. Because it serves the interface through `doGet()`, users must create an Apps Script `Web app` deployment and open that deployment URL to access the UI.
 
 ## First Run
 
