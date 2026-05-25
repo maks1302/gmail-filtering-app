@@ -395,21 +395,14 @@ function runFiltersLocked_() {
   }
 
   var settings = getSettings();
-  var intervalMinutes = settings.intervalMinutes || 1;
   var now = new Date();
-  var bufferMinutes = Math.max(5, intervalMinutes * 2);
-  var fallbackSince = new Date(
-    now.getTime() - (intervalMinutes + bufferMinutes) * 60 * 1000,
-  );
-  var lastRunAt = settings.lastRunAt ? new Date(settings.lastRunAt) : null;
   var oldestAllowed = new Date(
     now.getTime() - MAX_SCAN_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
   );
-  var since =
-    lastRunAt && !isNaN(lastRunAt.getTime()) ? lastRunAt : fallbackSince;
-  since = new Date(since.getTime() - bufferMinutes * 60 * 1000);
-  if (since < oldestAllowed) since = oldestAllowed;
-  var searchAfter = new Date(since.getTime() - 24 * 60 * 60 * 1000);
+  // Re-scan the bounded lookback window so newly added or edited rules can
+  // action existing matching messages. makeProcessedKey() prevents repeats.
+  var since = oldestAllowed;
+  var searchAfter = new Date(oldestAllowed.getTime() - 24 * 60 * 60 * 1000);
   var dateQuery = formatGmailSearchDate(searchAfter);
 
   // group rules by scope query
