@@ -12,7 +12,11 @@
 var RULES_KEY = "gmail_filter_rules";
 var LOG_KEY = "gmail_filter_log";
 var SETTINGS_KEY = "gmail_filter_settings";
+var PROCESSED_KEY = "gmail_filter_processed";
 var MAX_SCAN_LOOKBACK_DAYS = 7;
+var MAX_SCAN_THREADS = 1500;
+var SEARCH_PAGE_SIZE = 100;
+var MAX_PROCESSED = 2000;
 var MAX_LOG = 25; // prefer fewer, richer entries so rule/body details survive
 
 // ------------------------------------------------------------
@@ -84,6 +88,7 @@ function addRule(rule) {
   if (!rule.logic) rule.logic = "AND";
   if (!rule.conditions || !rule.conditions.length)
     throw new Error("Rule must have at least one condition");
+  validateRule(rule);
   rules.push(rule);
   saveRules(rules);
   return rule;
@@ -110,6 +115,7 @@ function updateRule(updated) {
     };
   });
   if (!found) throw new Error("Rule not found");
+  validateRule(updated);
   saveRules(rules);
   return updated;
 }
@@ -341,10 +347,52 @@ function testRule(conditions, logic, scope) {
 //  Core filter runner
 // ------------------------------------------------------------
 function runFilters() {
-  var rules = getRules().filter(function (r) {
-    return r.enabled !== false;
-  });
-  if (!rules.length) return;
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) {
+    _flushLogs([
+      {
+        ts: new Date().toISOString(),
+        action: "WARN",
+        subject: "Skipped run because another filter run is still active.",
+        conditions: [],
+      },
+    ]);
+    return;
+  }
+
+  try {
+    runFiltersLocked_();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function runFiltersLocked_() {
+  var logsToWrite = [];
+  var rules = getRules()
+    .filter(function (r) {
+      return r.enabled !== false;
+    })
+    .filter(function (r) {
+      try {
+        validateRule(r);
+        return true;
+      } catch (e) {
+        logsToWrite.push({
+          ts: new Date().toISOString(),
+          ruleId: r.id || "",
+          ruleName: r.name || "Unnamed rule",
+          action: "ERROR",
+          subject: "Skipped invalid rule: " + e.message,
+          conditions: [],
+        });
+        return false;
+      }
+    });
+  if (!rules.length) {
+    _flushLogs(logsToWrite);
+    return;
+  }
 
   var settings = getSettings();
   var intervalMinutes = settings.intervalMinutes || 1;
@@ -373,11 +421,11 @@ function runFilters() {
   });
 
   var hitMap = {};
-  var logsToWrite = [];
-
+  var processed = getProcessedMap();
+  var processedChanged = false;
   Object.keys(queryMap).forEach(function (scopeQuery) {
     var scopeRules = queryMap[scopeQuery];
-    var threads = GmailApp.search(scopeQuery + " after:" + dateQuery, 0, 500);
+    var threads = searchThreads(scopeQuery + " after:" + dateQuery);
 
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
@@ -388,6 +436,9 @@ function runFilters() {
           if (actionTaken) return;
 
           try {
+            var processedKey = makeProcessedKey(rule, msg.getId());
+            if (processed[processedKey]) return;
+
             var eval_ = evaluateConditions(msg, rule);
             if (!eval_.passed) return;
 
@@ -395,11 +446,13 @@ function runFilters() {
             var subjectValue = msg.getSubject();
             var bodySnippet = "";
             try {
-              bodySnippet = makeSnippet(msg.getPlainBody(), 200);
+              bodySnippet = makeSnippet(getMessageBodyForMatching(msg), 200);
             } catch (e) {}
 
             applyAction(msg, rule);
             actionTaken = true;
+            processed[processedKey] = new Date().toISOString();
+            processedChanged = true;
 
             hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
 
@@ -455,9 +508,87 @@ function runFilters() {
       }),
     );
   }
+  if (processedChanged) saveProcessedMap(processed);
   _flushLogs(logsToWrite);
   settings.lastRunAt = now.toISOString();
   saveSettings(settings);
+}
+
+function searchThreads(query) {
+  var allThreads = [];
+  for (
+    var start = 0;
+    start < MAX_SCAN_THREADS;
+    start += SEARCH_PAGE_SIZE
+  ) {
+    var pageSize = Math.min(SEARCH_PAGE_SIZE, MAX_SCAN_THREADS - start);
+    var page = GmailApp.search(query, start, pageSize);
+    if (!page.length) break;
+    allThreads = allThreads.concat(page);
+    if (page.length < pageSize) break;
+  }
+  return allThreads;
+}
+
+function getProcessedMap() {
+  var raw = PropertiesService.getUserProperties().getProperty(PROCESSED_KEY);
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveProcessedMap(processed) {
+  var entries = Object.keys(processed).map(function (key) {
+    return { key: key, ts: processed[key] };
+  });
+  entries.sort(function (a, b) {
+    return String(b.ts).localeCompare(String(a.ts));
+  });
+  entries = entries.slice(0, MAX_PROCESSED);
+
+  var trimmed = {};
+  entries.forEach(function (entry) {
+    trimmed[entry.key] = entry.ts;
+  });
+
+  var json = JSON.stringify(trimmed);
+  while (json.length > 8000 && entries.length > 100) {
+    entries = entries.slice(0, Math.floor(entries.length * 0.8));
+    trimmed = {};
+    entries.forEach(function (entry) {
+      trimmed[entry.key] = entry.ts;
+    });
+    json = JSON.stringify(trimmed);
+  }
+
+  PropertiesService.getUserProperties().setProperty(PROCESSED_KEY, json);
+}
+
+function makeProcessedKey(rule, messageId) {
+  var ruleSignature = JSON.stringify({
+    id: rule.id || "",
+    action: rule.action || "",
+    label: rule.label || "",
+    logic: rule.logic || "AND",
+    conditions: rule.conditions || [],
+  });
+  return shortHash(ruleSignature + "|" + String(messageId || ""));
+}
+
+function shortHash(value) {
+  var digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    value,
+  );
+  return digest
+    .slice(0, 12)
+    .map(function (byte) {
+      var unsigned = byte < 0 ? byte + 256 : byte;
+      return (unsigned + 256).toString(16).slice(-2);
+    })
+    .join("");
 }
 
 // ------------------------------------------------------------
@@ -535,10 +666,14 @@ function htmlToText(html) {
 
 function normalizeCondition(cond) {
   cond = cond || {};
+  var field = cond.field || "subject";
+  if (["from", "to", "subject", "body"].indexOf(field) === -1) {
+    field = "subject";
+  }
   var mode = cond.mode || "contains";
   if (mode === "exact") mode = "contains";
   return {
-    field: cond.field || "subject",
+    field: field,
     pattern: String(cond.pattern || ""),
     flags: typeof cond.flags === "string" ? cond.flags : "i",
     mode:
@@ -551,9 +686,74 @@ function normalizeCondition(cond) {
 function normalizeRule(rule) {
   rule = rule || {};
   return Object.assign({}, rule, {
-    logic: rule.logic || "AND",
-    scope: rule.scope && rule.scope.length ? rule.scope : ["inbox"],
+    logic: rule.logic === "OR" ? "OR" : "AND",
+    action: String(rule.action || "trash"),
+    label: String(rule.label || ""),
+    scope: normalizeScope(rule.scope),
     conditions: (rule.conditions || []).map(normalizeCondition),
+  });
+}
+
+function normalizeScope(scope) {
+  var valid = ["inbox", "spam", "trash", "sent"];
+  if (!scope || !scope.length) return ["inbox"];
+  if (scope.indexOf("anywhere") !== -1) return ["anywhere"];
+  var normalized = [];
+  scope.forEach(function (item) {
+    if (valid.indexOf(item) !== -1 && normalized.indexOf(item) === -1) {
+      normalized.push(item);
+    }
+  });
+  return normalized.length ? normalized : ["inbox"];
+}
+
+function validateRule(rule) {
+  var validActions = [
+    "trash",
+    "delete",
+    "archive",
+    "label",
+    "label+archive",
+    "trash+label",
+    "star",
+    "markread",
+  ];
+  var validFields = ["from", "to", "subject", "body"];
+  var validModes = ["contains", "equals", "regex"];
+
+  if (validActions.indexOf(rule.action) === -1) {
+    throw new Error("Invalid rule action");
+  }
+  if (
+    (rule.action === "label" ||
+      rule.action === "label+archive" ||
+      rule.action === "trash+label") &&
+    !String(rule.label || "").trim()
+  ) {
+    throw new Error("Label action requires a label name");
+  }
+  if (!rule.conditions || !rule.conditions.length) {
+    throw new Error("Rule must have at least one condition");
+  }
+
+  rule.conditions.forEach(function (cond, index) {
+    var label = "Condition " + (index + 1);
+    if (validFields.indexOf(cond.field) === -1) {
+      throw new Error(label + " has an invalid field");
+    }
+    if (validModes.indexOf(cond.mode) === -1) {
+      throw new Error(label + " has an invalid match mode");
+    }
+    if (!String(cond.pattern || "").trim()) {
+      throw new Error(label + " has an empty pattern");
+    }
+    if (cond.mode === "regex") {
+      try {
+        new RegExp(cond.pattern, cond.flags || "i");
+      } catch (e) {
+        throw new Error(label + ": invalid regex - " + e.message);
+      }
+    }
   });
 }
 

@@ -2831,7 +2831,7 @@
                                     '<div class="rule-cond-row">' +
                                     badge +
                                     '<span class="pill pill-field">' +
-                                    c.field +
+                                    esc(c.field) +
                                     '</span><span class="pill pill-pattern">' +
                                     esc(c.pattern) +
                                     '</span><span class="pill pill-scope">' +
@@ -2875,9 +2875,9 @@
                                 "</div>",
                             '<div class="rule-meta">',
                             '<span class="pill pill-action ' +
-                                ac +
+                                esc(ac) +
                                 '">' +
-                                r.action +
+                                esc(r.action) +
                                 esc(lp) +
                                 "</span>",
                             '<span class="pill pill-scope">📍 ' +
