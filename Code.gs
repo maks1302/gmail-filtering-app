@@ -12,6 +12,7 @@
 var RULES_KEY = "gmail_filter_rules";
 var LOG_KEY = "gmail_filter_log";
 var SETTINGS_KEY = "gmail_filter_settings";
+var MAX_SCAN_LOOKBACK_DAYS = 7;
 var MAX_LOG = 25; // prefer fewer, richer entries so rule/body details survive
 
 // ------------------------------------------------------------
@@ -32,7 +33,9 @@ function doGet() {
 // ------------------------------------------------------------
 function getSettings() {
   var raw = PropertiesService.getUserProperties().getProperty(SETTINGS_KEY);
-  return raw ? JSON.parse(raw) : { intervalMinutes: 1 };
+  var settings = raw ? JSON.parse(raw) : {};
+  if (!settings.intervalMinutes) settings.intervalMinutes = 1;
+  return settings;
 }
 
 function saveSettings(s) {
@@ -345,11 +348,21 @@ function runFilters() {
 
   var settings = getSettings();
   var intervalMinutes = settings.intervalMinutes || 1;
-  var bufferMinutes = 2;
-  var since = new Date(
-    Date.now() - (intervalMinutes + bufferMinutes) * 60 * 1000,
+  var now = new Date();
+  var bufferMinutes = Math.max(5, intervalMinutes * 2);
+  var fallbackSince = new Date(
+    now.getTime() - (intervalMinutes + bufferMinutes) * 60 * 1000,
   );
-  var ts = Math.floor(since.getTime() / 1000);
+  var lastRunAt = settings.lastRunAt ? new Date(settings.lastRunAt) : null;
+  var oldestAllowed = new Date(
+    now.getTime() - MAX_SCAN_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
+  );
+  var since =
+    lastRunAt && !isNaN(lastRunAt.getTime()) ? lastRunAt : fallbackSince;
+  since = new Date(since.getTime() - bufferMinutes * 60 * 1000);
+  if (since < oldestAllowed) since = oldestAllowed;
+  var searchAfter = new Date(since.getTime() - 24 * 60 * 60 * 1000);
+  var dateQuery = formatGmailSearchDate(searchAfter);
 
   // group rules by scope query
   var queryMap = {};
@@ -364,7 +377,7 @@ function runFilters() {
 
   Object.keys(queryMap).forEach(function (scopeQuery) {
     var scopeRules = queryMap[scopeQuery];
-    var threads = GmailApp.search(scopeQuery + " after:" + ts, 0, 200);
+    var threads = GmailApp.search(scopeQuery + " after:" + dateQuery, 0, 500);
 
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
@@ -443,6 +456,8 @@ function runFilters() {
     );
   }
   _flushLogs(logsToWrite);
+  settings.lastRunAt = now.toISOString();
+  saveSettings(settings);
 }
 
 // ------------------------------------------------------------
@@ -457,10 +472,65 @@ function getFieldValue(msg, field) {
     case "subject":
       return msg.getSubject();
     case "body":
-      return msg.getPlainBody();
+      return getMessageBodyForMatching(msg);
     default:
       return "";
   }
+}
+
+function formatGmailSearchDate(date) {
+  return (
+    date.getFullYear() +
+    "/" +
+    pad2(date.getMonth() + 1) +
+    "/" +
+    pad2(date.getDate())
+  );
+}
+
+function pad2(value) {
+  return value < 10 ? "0" + value : String(value);
+}
+
+function getMessageBodyForMatching(msg) {
+  var plain = "";
+  var htmlText = "";
+
+  try {
+    plain = msg.getPlainBody() || "";
+  } catch (e) {}
+
+  try {
+    htmlText = htmlToText(msg.getBody() || "");
+  } catch (e) {}
+
+  if (!htmlText) return plain;
+  if (!plain) return htmlText;
+  if (plain.indexOf(htmlText) !== -1 || htmlText.indexOf(plain) !== -1) {
+    return plain.length >= htmlText.length ? plain : htmlText;
+  }
+  return plain + "\n" + htmlText;
+}
+
+function htmlToText(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, function (_, code) {
+      return String.fromCharCode(parseInt(code, 10));
+    })
+    .replace(/&#x([0-9a-f]+);/gi, function (_, code) {
+      return String.fromCharCode(parseInt(code, 16));
+    });
 }
 
 function normalizeCondition(cond) {
