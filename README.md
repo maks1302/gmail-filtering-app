@@ -53,6 +53,8 @@ After authorization, it can run silently in the background on the configured sch
 
 This app is not usable from the editor alone. Because it serves the interface through `doGet()`, users must create an Apps Script `Web app` deployment and open that deployment URL to access the UI.
 
+After redeploying or changing `Code.gs`, stop auto-run in the UI and activate it again. This deletes the existing scheduled `runFilters` trigger and creates a fresh one, which helps avoid stale or duplicate trigger behavior.
+
 ## First Run
 
 Recommended setup:
