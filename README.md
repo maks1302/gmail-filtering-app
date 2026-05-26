@@ -55,6 +55,8 @@ This app is not usable from the editor alone. Because it serves the interface th
 
 After redeploying or changing `Code.gs`, stop auto-run in the UI and activate it again. This deletes the existing scheduled `runFilters` trigger and creates a fresh one, which helps avoid stale or duplicate trigger behavior.
 
+Gmail and Apps Script have daily service quotas. For regular use, prefer a 10 minute or longer auto-run interval, keep rule scopes as narrow as possible, and use `Test` / `Debug` when needed rather than repeatedly during normal auto-run.
+
 ## First Run
 
 Recommended setup:

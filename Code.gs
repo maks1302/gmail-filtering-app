@@ -13,7 +13,12 @@ var RULES_KEY = "gmail_filter_rules";
 var LOG_KEY = "gmail_filter_log";
 var SETTINGS_KEY = "gmail_filter_settings";
 var PROCESSED_KEY = "gmail_filter_processed";
+// Auto-run scans messages newer than this many days. Processed keys prevent
+// repeated actions when the same window is scanned again.
 var MAX_SCAN_LOOKBACK_DAYS = 1;
+
+// Maximum Gmail threads fetched per distinct rule scope during one auto-run.
+// A thread can contain multiple messages.
 var MAX_SCAN_THREADS = 1500;
 var SEARCH_PAGE_SIZE = 100;
 var MAX_PROCESSED = 2000;
@@ -250,19 +255,30 @@ function buildScopeQuery(scope) {
 //  Evaluate conditions for a single message
 //  Returns { passed: bool, condResults: [{field, pattern, matched, actualValue}] }
 // ------------------------------------------------------------
-function evaluateConditions(msg, rule) {
-  var condResults = (rule.conditions || []).map(function (cond) {
+function evaluateConditions(msg, rule, options) {
+  options = options || {};
+  var condResults = [];
+  var conditions = rule.conditions || [];
+
+  for (var i = 0; i < conditions.length; i++) {
+    var cond = conditions[i];
     var actualValue = getFieldValue(msg, cond.field);
     var matched = matchCondition(actualValue, cond);
-    return {
+    condResults.push({
       field: cond.field,
       pattern: cond.pattern,
       flags: cond.flags || "i",
       mode: cond.mode || "contains",
       matched: matched,
-      actualValue: makeSnippet(actualValue, 120),
-    };
-  });
+      actualValue:
+        options.includeActual === false ? "" : makeSnippet(actualValue, 120),
+    });
+
+    if (options.shortCircuit) {
+      if (rule.logic === "OR" && matched) break;
+      if (rule.logic !== "OR" && !matched) break;
+    }
+  }
 
   var passed =
     rule.logic === "OR"
@@ -325,8 +341,12 @@ function testRule(conditions, logic, scope) {
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
         if (matches.length >= 30) return;
-        var eval_ = evaluateConditions(msg, rule);
+        var eval_ = evaluateConditions(msg, rule, {
+          shortCircuit: true,
+          includeActual: false,
+        });
         if (eval_.passed) {
+          eval_ = evaluateConditions(msg, rule);
           matches.push({
             from: msg.getFrom(),
             subject: msg.getSubject(),
@@ -432,8 +452,13 @@ function runFiltersLocked_() {
             var processedKey = makeProcessedKey(rule, msg.getId());
             if (processed[processedKey]) return;
 
-            var eval_ = evaluateConditions(msg, rule);
+            var eval_ = evaluateConditions(msg, rule, {
+              shortCircuit: true,
+              includeActual: false,
+            });
             if (!eval_.passed) return;
+
+            eval_ = evaluateConditions(msg, rule);
 
             var fromValue = msg.getFrom();
             var subjectValue = msg.getSubject();
@@ -618,22 +643,18 @@ function pad2(value) {
 
 function getMessageBodyForMatching(msg) {
   var plain = "";
-  var htmlText = "";
 
   try {
     plain = msg.getPlainBody() || "";
   } catch (e) {}
 
+  if (plain) return plain;
+
   try {
-    htmlText = htmlToText(msg.getBody() || "");
+    return htmlToText(msg.getBody() || "");
   } catch (e) {}
 
-  if (!htmlText) return plain;
-  if (!plain) return htmlText;
-  if (plain.indexOf(htmlText) !== -1 || htmlText.indexOf(plain) !== -1) {
-    return plain.length >= htmlText.length ? plain : htmlText;
-  }
-  return plain + "\n" + htmlText;
+  return "";
 }
 
 function htmlToText(html) {
