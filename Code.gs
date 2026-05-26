@@ -262,21 +262,22 @@ function evaluateConditions(msg, rule, options) {
 
   for (var i = 0; i < conditions.length; i++) {
     var cond = conditions[i];
-    var actualValue = getFieldValue(msg, cond.field);
-    var matched = matchCondition(actualValue, cond);
+    var result = evaluateCondition(msg, cond);
     condResults.push({
       field: cond.field,
       pattern: cond.pattern,
       flags: cond.flags || "i",
       mode: cond.mode || "contains",
-      matched: matched,
+      matched: result.matched,
       actualValue:
-        options.includeActual === false ? "" : makeSnippet(actualValue, 120),
+        options.includeActual === false
+          ? ""
+          : makeSnippet(result.actualValue, 120),
     });
 
     if (options.shortCircuit) {
-      if (rule.logic === "OR" && matched) break;
-      if (rule.logic !== "OR" && !matched) break;
+      if (rule.logic === "OR" && result.matched) break;
+      if (rule.logic !== "OR" && !result.matched) break;
     }
   }
 
@@ -641,20 +642,58 @@ function pad2(value) {
   return value < 10 ? "0" + value : String(value);
 }
 
-function getMessageBodyForMatching(msg) {
+function evaluateCondition(msg, cond) {
+  if (cond.field !== "body") {
+    var actualValue = getFieldValue(msg, cond.field);
+    return {
+      matched: matchCondition(actualValue, cond),
+      actualValue: actualValue,
+    };
+  }
+
+  return evaluateBodyCondition(msg, cond);
+}
+
+function evaluateBodyCondition(msg, cond) {
   var plain = "";
 
   try {
     plain = msg.getPlainBody() || "";
   } catch (e) {}
 
-  if (plain) return plain;
+  if (matchCondition(plain, cond)) {
+    return { matched: true, actualValue: plain };
+  }
 
+  var htmlText = "";
   try {
-    return htmlToText(msg.getBody() || "");
+    htmlText = htmlToText(msg.getBody() || "");
   } catch (e) {}
 
-  return "";
+  return {
+    matched: matchCondition(htmlText, cond),
+    actualValue: htmlText || plain,
+  };
+}
+
+function getMessageBodyForMatching(msg) {
+  var plain = "";
+  var htmlText = "";
+
+  try {
+    plain = msg.getPlainBody() || "";
+  } catch (e) {}
+
+  try {
+    htmlText = htmlToText(msg.getBody() || "");
+  } catch (e) {}
+
+  if (!htmlText) return plain;
+  if (!plain) return htmlText;
+  if (plain.indexOf(htmlText) !== -1 || htmlText.indexOf(plain) !== -1) {
+    return plain.length >= htmlText.length ? plain : htmlText;
+  }
+  return plain + "\n" + htmlText;
 }
 
 function htmlToText(html) {
