@@ -9,9 +9,28 @@ It lets you:
 - match email `From`, `To`, `Subject`, and `Body`
 - choose between `Contains`, `Equals`, and `Regex` matching
 - automatically `trash`, `archive`, `label`, `star`, `mark read`, or `delete`
+- optionally classify unread Inbox mail with AI through OpenRouter
 - review activity logs and debug why a rule matched
 
 The app runs on a time trigger in the background and keeps checking for new emails based on your configured interval.
+
+## AI Filtering
+
+AI filtering is optional and disabled by default. In **Settings → AI Filtering via OpenRouter**, you can configure:
+
+- an OpenRouter API key and structured-output-compatible model
+- review and probable-spam score thresholds
+- a safe action and Gmail label for each threshold
+- the maximum number of messages and body characters processed per run
+- allowlisted sender addresses and domains
+- personal classification instructions
+- dry-run mode, which logs classifications without changing mail
+
+The AI pass runs after normal rules and only scans recent unread Inbox messages. Messages already handled by a normal rule, starred messages, Gmail-important threads, and allowlisted senders are skipped. Results are cached so unchanged mail is not repeatedly sent to the model.
+
+Start with dry-run enabled and inspect the Activity Log. The default live actions use labels, archive, or Trash; AI output is never allowed to permanently delete mail or select an arbitrary Gmail action.
+
+The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited plain-text body are sent to the selected OpenRouter model; attachments are not sent. Deploy the web app with access restricted to your own account.
 
 ## How It Works
 
@@ -46,6 +65,8 @@ Rules run from top to bottom, so order matters.
 9. Authorize access to your Gmail.
 10. Open the deployed web app UI and create your rules.
 11. Activate auto-run so it keeps working in the background.
+
+For AI filtering, open **Settings**, save an OpenRouter API key, keep **Dry run** enabled, save the AI settings, and use **Test 5 Recent Emails** before enabling automatic AI filtering.
 
 After authorization, it can run silently in the background on the configured schedule.
 

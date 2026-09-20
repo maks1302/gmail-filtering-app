@@ -369,7 +369,8 @@
                 letter-spacing: 0.4px;
             }
             input,
-            select {
+            select,
+            .settings-textarea {
                 background: var(--bg3);
                 border: 1px solid var(--border);
                 border-radius: 7px;
@@ -382,7 +383,8 @@
                 font-family: inherit;
             }
             input:focus,
-            select:focus {
+            select:focus,
+            .settings-textarea:focus {
                 border-color: var(--accent);
             }
             input::placeholder {
@@ -393,6 +395,27 @@
             }
             input.warn-border {
                 border-color: var(--warning) !important;
+            }
+            .settings-textarea {
+                min-height: 88px;
+                resize: vertical;
+                width: 100%;
+            }
+            .settings-check {
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                color: var(--text);
+                font-size: 13px;
+                cursor: pointer;
+            }
+            .settings-check input {
+                width: auto;
+            }
+            .settings-help {
+                color: var(--muted);
+                font-size: 12px;
+                line-height: 1.55;
             }
 
             .warn-box {
@@ -1354,7 +1377,7 @@
                     <div class="logo-icon">✉️</div>
                     <div>
                         <div class="logo-text">GmailFilter</div>
-                        <div class="logo-sub">v5</div>
+                        <div class="logo-sub">v6</div>
                     </div>
                 </div>
                 <div
@@ -1728,6 +1751,123 @@
                         </div>
                     </div>
                     <div class="card">
+                        <div class="card-title">🤖 AI Filtering via OpenRouter</div>
+                        <div class="form-grid">
+                            <div class="form-group form-full">
+                                <label class="settings-check">
+                                    <input type="checkbox" id="ai-enabled" />
+                                    Enable AI filtering for recent unread Inbox messages
+                                </label>
+                                <label class="settings-check">
+                                    <input type="checkbox" id="ai-dry-run" checked />
+                                    Dry run — classify and log, but do not modify mail
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">OpenRouter API Key</label>
+                                <input
+                                    type="password"
+                                    id="ai-api-key"
+                                    autocomplete="new-password"
+                                    placeholder="Enter key to save"
+                                />
+                                <div class="settings-help" id="ai-key-status">
+                                    No key saved
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Model</label>
+                                <input
+                                    type="text"
+                                    id="ai-model"
+                                    placeholder="openai/gpt-4o-mini"
+                                />
+                                <div class="settings-help">
+                                    Must support OpenRouter structured outputs.
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Review score</label>
+                                <input type="number" id="ai-review-threshold" min="0" max="99" />
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Probable spam score</label>
+                                <input type="number" id="ai-spam-threshold" min="1" max="100" />
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Review action</label>
+                                <select id="ai-review-action">
+                                    <option value="none">Do nothing</option>
+                                    <option value="label">Add label</option>
+                                    <option value="label+archive">Label + archive</option>
+                                    <option value="trash+label">Label + trash</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Review label</label>
+                                <input type="text" id="ai-review-label" />
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Probable spam action</label>
+                                <select id="ai-spam-action">
+                                    <option value="none">Do nothing</option>
+                                    <option value="label">Add label</option>
+                                    <option value="label+archive">Label + archive</option>
+                                    <option value="trash+label">Label + trash</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Probable spam label</label>
+                                <input type="text" id="ai-spam-label" />
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Messages per run</label>
+                                <input type="number" id="ai-max-per-run" min="1" max="50" />
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Maximum body characters</label>
+                                <input type="number" id="ai-max-body" min="500" max="20000" step="500" />
+                            </div>
+                            <div class="form-group form-full">
+                                <label class="field-label">Allowlist</label>
+                                <textarea
+                                    class="settings-textarea"
+                                    id="ai-allowlist"
+                                    placeholder="friend@example.com, mycompany.com"
+                                ></textarea>
+                                <div class="settings-help">
+                                    Email addresses or domains separated by commas, spaces, or new lines. Starred and Gmail-important threads are also skipped.
+                                </div>
+                            </div>
+                            <div class="form-group form-full">
+                                <label class="field-label">Personal classification instructions</label>
+                                <textarea
+                                    class="settings-textarea"
+                                    id="ai-custom-prompt"
+                                    placeholder="Example: Job offers are wanted. Crypto promotions are always spam."
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div class="settings-help" style="margin-bottom: 14px">
+                            Only sender, recipient, subject, date, and a limited plain-text body are sent to OpenRouter. Attachments are never sent. Start in dry-run mode and review the Activity Log before enabling actions.
+                        </div>
+                        <div class="action-strip">
+                            <button class="btn btn-primary" id="ai-save-btn" onclick="saveAiSettings()">
+                                Save AI Settings
+                            </button>
+                            <button class="btn btn-ghost" id="ai-test-btn" onclick="testAiFiltering()">
+                                Test 5 Recent Emails
+                            </button>
+                            <button class="btn btn-ghost" onclick="clearAiCache()">
+                                Clear AI Cache
+                            </button>
+                            <button class="btn btn-danger" onclick="clearAiApiKey()">
+                                Remove API Key
+                            </button>
+                        </div>
+                        <div class="test-result" id="ai-test-result"></div>
+                    </div>
+                    <div class="card">
                         <div class="card-title">
                             🔥 Permanently Delete — Setup
                         </div>
@@ -1758,7 +1898,7 @@
                                     color: var(--muted);
                                     font-weight: 400;
                                 "
-                                >(last 50 · click to expand)</span
+                                >(last 25 · click to expand)</span
                             ></span
                         >
                         <button
@@ -2300,6 +2440,10 @@
             var logicState = { r: "AND", e: "AND" };
             var draggedRuleId = null;
             var activePatternInput = null;
+            var currentAiSettings = {
+                reviewThreshold: 85,
+                spamThreshold: 98,
+            };
 
             // ---- mobile ----
             function toggleSidebar() {
@@ -2327,6 +2471,7 @@
                 document.getElementById("nav-" + name).classList.add("active");
                 closeSidebar();
                 if (name === "log") loadLog();
+                if (name === "settings") loadAiSettings();
             }
 
             // ---- toast ----
@@ -3506,6 +3651,217 @@
                     .deactivateTrigger();
             }
 
+            // ---- AI settings ----
+            function loadAiSettings() {
+                google.script.run
+                    .withSuccessHandler(function (ai) {
+                        currentAiSettings = ai;
+                        document.getElementById("ai-enabled").checked =
+                            ai.enabled === true;
+                        document.getElementById("ai-dry-run").checked =
+                            ai.dryRun !== false;
+                        document.getElementById("ai-model").value =
+                            ai.model || "openai/gpt-4o-mini";
+                        document.getElementById("ai-review-threshold").value =
+                            ai.reviewThreshold;
+                        document.getElementById("ai-spam-threshold").value =
+                            ai.spamThreshold;
+                        document.getElementById("ai-review-action").value =
+                            ai.reviewAction;
+                        document.getElementById("ai-spam-action").value =
+                            ai.spamAction;
+                        document.getElementById("ai-review-label").value =
+                            ai.reviewLabel || "AI/Review";
+                        document.getElementById("ai-spam-label").value =
+                            ai.spamLabel || "AI/Probable Spam";
+                        document.getElementById("ai-max-per-run").value =
+                            ai.maxPerRun;
+                        document.getElementById("ai-max-body").value =
+                            ai.maxBodyChars;
+                        document.getElementById("ai-allowlist").value =
+                            ai.allowlist || "";
+                        document.getElementById("ai-custom-prompt").value =
+                            ai.customPrompt || "";
+                        document.getElementById("ai-api-key").value = "";
+                        document.getElementById("ai-key-status").textContent =
+                            ai.hasApiKey
+                                ? "✓ API key is saved (it is never shown here)"
+                                : "No key saved";
+                    })
+                    .withFailureHandler(function (e) {
+                        toast("Could not load AI settings: " + e.message, "error");
+                    })
+                    .getAiSettings();
+            }
+
+            function collectAiSettings() {
+                return {
+                    enabled: document.getElementById("ai-enabled").checked,
+                    dryRun: document.getElementById("ai-dry-run").checked,
+                    apiKey: document.getElementById("ai-api-key").value.trim(),
+                    model: document.getElementById("ai-model").value.trim(),
+                    reviewThreshold: parseInt(
+                        document.getElementById("ai-review-threshold").value,
+                        10,
+                    ),
+                    spamThreshold: parseInt(
+                        document.getElementById("ai-spam-threshold").value,
+                        10,
+                    ),
+                    reviewAction:
+                        document.getElementById("ai-review-action").value,
+                    spamAction:
+                        document.getElementById("ai-spam-action").value,
+                    reviewLabel: document
+                        .getElementById("ai-review-label")
+                        .value.trim(),
+                    spamLabel: document
+                        .getElementById("ai-spam-label")
+                        .value.trim(),
+                    maxPerRun: parseInt(
+                        document.getElementById("ai-max-per-run").value,
+                        10,
+                    ),
+                    maxBodyChars: parseInt(
+                        document.getElementById("ai-max-body").value,
+                        10,
+                    ),
+                    allowlist: document
+                        .getElementById("ai-allowlist")
+                        .value.trim(),
+                    customPrompt: document
+                        .getElementById("ai-custom-prompt")
+                        .value.trim(),
+                };
+            }
+
+            function saveAiSettings() {
+                var settings = collectAiSettings();
+                if (!settings.model) {
+                    toast("Enter an OpenRouter model", "error");
+                    return;
+                }
+                if (settings.spamThreshold <= settings.reviewThreshold) {
+                    toast("Spam score must be higher than review score", "error");
+                    return;
+                }
+                if (
+                    settings.enabled &&
+                    !settings.dryRun &&
+                    !confirm(
+                        "Enable live AI actions? Messages above your thresholds may be labeled, archived, or moved to Trash.",
+                    )
+                ) {
+                    return;
+                }
+                var btn = document.getElementById("ai-save-btn");
+                btn.disabled = true;
+                btn.textContent = "Saving…";
+                google.script.run
+                    .withSuccessHandler(function () {
+                        btn.disabled = false;
+                        btn.textContent = "Save AI Settings";
+                        toast("AI settings saved ✓", "success");
+                        loadAiSettings();
+                    })
+                    .withFailureHandler(function (e) {
+                        btn.disabled = false;
+                        btn.textContent = "Save AI Settings";
+                        toast("Could not save: " + e.message, "error");
+                    })
+                    .saveAiSettings(settings);
+            }
+
+            function testAiFiltering() {
+                var btn = document.getElementById("ai-test-btn");
+                var resultEl = document.getElementById("ai-test-result");
+                btn.disabled = true;
+                btn.textContent = "Classifying…";
+                resultEl.classList.add("show");
+                resultEl.innerHTML =
+                    '<span class="spin"></span> Sending up to 5 recent eligible emails to OpenRouter…';
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        btn.disabled = false;
+                        btn.textContent = "Test 5 Recent Emails";
+                        if (!res.results || !res.results.length) {
+                            resultEl.innerHTML =
+                                '<span style="color:var(--muted)">No eligible unread Inbox messages found.</span>';
+                            return;
+                        }
+                        resultEl.innerHTML = res.results
+                            .map(function (item) {
+                                var color =
+                                    item.spamScore >=
+                                    currentAiSettings.spamThreshold
+                                        ? "var(--danger)"
+                                        : item.spamScore >=
+                                            currentAiSettings.reviewThreshold
+                                          ? "var(--warning)"
+                                          : "var(--success)";
+                                return (
+                                    '<div class="debug-msg">' +
+                                    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px">' +
+                                    '<strong style="color:' +
+                                    color +
+                                    '">Score ' +
+                                    item.spamScore +
+                                    "</strong>" +
+                                    '<span class="pill pill-scope">' +
+                                    esc(item.category) +
+                                    "</span>" +
+                                    '<span style="color:var(--muted)">confidence ' +
+                                    item.confidence +
+                                    "%</span></div>" +
+                                    "<strong>" +
+                                    esc(item.from) +
+                                    "</strong><div>" +
+                                    esc(item.subject) +
+                                    '</div><div class="actual-val">' +
+                                    esc(item.reason) +
+                                    "</div></div>"
+                                );
+                            })
+                            .join("");
+                    })
+                    .withFailureHandler(function (e) {
+                        btn.disabled = false;
+                        btn.textContent = "Test 5 Recent Emails";
+                        resultEl.innerHTML =
+                            '<span style="color:var(--danger)">Error: ' +
+                            esc(e.message) +
+                            "</span>";
+                    })
+                    .testAiFiltering();
+            }
+
+            function clearAiCache() {
+                if (!confirm("Clear AI classification cache? Eligible emails may be classified again."))
+                    return;
+                google.script.run
+                    .withSuccessHandler(function () {
+                        toast("AI cache cleared", "info");
+                    })
+                    .withFailureHandler(function (e) {
+                        toast("Could not clear cache: " + e.message, "error");
+                    })
+                    .clearAiCache();
+            }
+
+            function clearAiApiKey() {
+                if (!confirm("Remove the saved OpenRouter API key and disable AI filtering?"))
+                    return;
+                google.script.run
+                    .withSuccessHandler(function () {
+                        toast("API key removed; AI filtering disabled", "info");
+                        loadAiSettings();
+                    })
+                    .withFailureHandler(function (e) {
+                        toast("Could not remove key: " + e.message, "error");
+                    })
+                    .clearAiApiKey();
+            }
+
             // ---- log ----
             function loadLog() {
                 google.script.run
@@ -3595,6 +3951,22 @@
                                       "</div></div>"
                                     : "";
 
+                                var aiHTML =
+                                    l.aiScore !== null &&
+                                    l.aiScore !== undefined
+                                        ? '<div class="log-section"><div class="log-section-label">AI classification</div>' +
+                                          '<div style="color:var(--text);margin-bottom:5px"><strong>Spam score: ' +
+                                          l.aiScore +
+                                          '</strong> · ' +
+                                          esc(l.aiCategory || "unknown") +
+                                          " · confidence " +
+                                          l.aiConfidence +
+                                          "%</div>" +
+                                          '<div class="actual-val">' +
+                                          esc(l.aiReason || "") +
+                                          "</div></div>"
+                                        : "";
+
                                 var expandHTML =
                                     '<div class="log-expand" id="logx-' +
                                     i +
@@ -3602,6 +3974,7 @@
                                     '<div class="log-section"><div class="log-section-label">Rule</div><div style="color:var(--text);">' +
                                     esc(l.ruleName || "Unknown") +
                                     "</div></div>" +
+                                    aiHTML +
                                     condHTML +
                                     bodyHTML +
                                     "</div>";
@@ -3655,6 +4028,7 @@
                 addConditionRow("r");
                 loadRules();
                 loadStats();
+                loadAiSettings();
             };
         </script>
     </body>
