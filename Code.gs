@@ -1296,8 +1296,6 @@ function validateRule(rule) {
       throw new Error("AI rule prompt must be 4,000 characters or fewer");
     if (rule.aiThreshold < 1 || rule.aiThreshold > 100)
       throw new Error("AI rule threshold must be between 1 and 100");
-    if (rule.action === "delete")
-      throw new Error("AI rules cannot permanently delete mail; use Trash");
   }
   if (
     (rule.action === "label" ||

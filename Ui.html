@@ -1580,7 +1580,7 @@
                                 <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
                                 <input type="number" id="r-ai-threshold" min="1" max="100" value="95" />
                                 <div class="settings-help">
-                                    The configured action runs when the AI match score reaches this threshold. AI rules cannot permanently delete mail.
+                                    The configured action runs when the AI match score reaches this threshold. Permanent deletion is irreversible and may be triggered by an incorrect AI judgment.
                                 </div>
                             </div>
                         </div>
@@ -2296,7 +2296,7 @@
                             <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
                             <input type="number" id="e-ai-threshold" min="1" max="100" value="95" />
                             <div class="settings-help">
-                                AI rules cannot permanently delete mail. Use Move to Trash for a recoverable action.
+                                Permanent deletion is irreversible and may be triggered by an incorrect AI judgment. Test in dry-run mode first.
                             </div>
                         </div>
                     </div>
@@ -2678,10 +2678,6 @@
                     isAi ? "flex" : "none";
                 document.getElementById(prefix + "-pattern-fields").style.display =
                     isAi ? "none" : "block";
-                var action = document.getElementById(prefix + "-action");
-                var deleteOption = action.querySelector('option[value="delete"]');
-                if (deleteOption) deleteOption.disabled = isAi;
-                if (isAi && action.value === "delete") action.value = "trash";
                 toggleLabel(prefix + "-label-group", prefix + "-action");
             }
 
@@ -3313,8 +3309,13 @@
                     toast("AI threshold must be between 1 and 100", "error");
                     return;
                 }
-                if (type === "ai" && action === "delete") {
-                    toast("AI rules cannot permanently delete mail", "error");
+                if (
+                    type === "ai" &&
+                    action === "delete" &&
+                    !confirm(
+                        "This AI rule will permanently delete matching email. AI can be wrong and deleted messages cannot be recovered. Save this rule anyway?",
+                    )
+                ) {
                     return;
                 }
                 var err = type === "ai" ? null : validateConditions(conds);
@@ -3475,8 +3476,13 @@
                     toast("AI threshold must be between 1 and 100", "error");
                     return;
                 }
-                if (type === "ai" && action === "delete") {
-                    toast("AI rules cannot permanently delete mail", "error");
+                if (
+                    type === "ai" &&
+                    action === "delete" &&
+                    !confirm(
+                        "This AI rule will permanently delete matching email. AI can be wrong and deleted messages cannot be recovered. Save these changes anyway?",
+                    )
+                ) {
                     return;
                 }
                 var err = type === "ai" ? null : validateConditions(conds);

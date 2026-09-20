@@ -32,7 +32,7 @@ Each AI rule has its own:
 
 Pattern rules run first, followed by AI rules in their displayed order. If an earlier rule handles a message, later AI rules skip it. AI results are cached per message and rule configuration so unchanged mail is not repeatedly sent to the model. Editing a prompt, threshold, scope, action, or model creates a new cache version.
 
-Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies a match score, confidence, and explanation; the configured rule controls the Gmail action. AI rules cannot permanently delete mail—use Trash for a recoverable action.
+Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies a match score, confidence, and explanation; the configured rule controls the Gmail action. Permanent deletion is available for AI rules, but it is irreversible and an incorrect AI judgment can permanently remove legitimate mail. The UI requires explicit confirmation when saving that combination.
 
 The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited text body are sent to the selected OpenRouter model; attachments are not sent. Selecting Sent or Everywhere can send your own outgoing message text to the model. Deploy the web app with access restricted to your own account.
 
