@@ -1459,6 +1459,13 @@
                                 />
                             </div>
                             <div class="form-group">
+                                <label class="field-label">Rule Type</label>
+                                <select id="r-type" onchange="toggleRuleType('r')">
+                                    <option value="pattern">⚡ Pattern Rule</option>
+                                    <option value="ai">🤖 AI Rule</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label class="field-label">Action</label>
                                 <select
                                     id="r-action"
@@ -1563,9 +1570,22 @@
                                     >
                                 </div>
                             </div>
+                            <div class="form-group form-full" id="r-ai-fields" style="display: none">
+                                <label class="field-label">AI Rule Prompt</label>
+                                <textarea
+                                    class="settings-textarea"
+                                    id="r-ai-prompt"
+                                    placeholder="Example: Match unsolicited cryptocurrency promotions, but not transaction receipts or account security alerts."
+                                ></textarea>
+                                <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
+                                <input type="number" id="r-ai-threshold" min="1" max="100" value="95" />
+                                <div class="settings-help">
+                                    The configured action runs when the AI match score reaches this threshold. AI rules cannot permanently delete mail.
+                                </div>
+                            </div>
                         </div>
 
-                        <div style="margin-bottom: 14px">
+                        <div style="margin-bottom: 14px" id="r-pattern-fields">
                             <div
                                 style="
                                     display: flex;
@@ -1615,7 +1635,7 @@
                         <div class="action-strip">
                             <button
                                 class="btn btn-ghost"
-                                onclick="testRuleForm('r', 'r-test-result')"
+                                onclick="testCurrentRule('r', 'r-test-result')"
                             >
                                 🔍 Test
                             </button>
@@ -1637,8 +1657,8 @@
                         <div>
                             <div class="section-title">Your Rules</div>
                             <div class="section-note">
-                                ⚠️ Rules run top-to-bottom — order matters. Use
-                                drag & drop to reorder.<br />🐛 Use the Debug
+                                ⚠️ Pattern rules run first, then AI rules. Each group runs top-to-bottom. Use
+                                drag & drop to reorder within a rule type.<br />🐛 Use the Debug
                                 button to see exactly why a rule matches or
                                 doesn't.
                             </div>
@@ -1751,16 +1771,12 @@
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-title">🤖 AI Filtering via OpenRouter</div>
+                        <div class="card-title">🤖 AI Rule Settings</div>
                         <div class="form-grid">
                             <div class="form-group form-full">
                                 <label class="settings-check">
-                                    <input type="checkbox" id="ai-enabled" />
-                                    Enable AI filtering for recent unread Inbox messages
-                                </label>
-                                <label class="settings-check">
                                     <input type="checkbox" id="ai-dry-run" checked />
-                                    Dry run — classify and log, but do not modify mail
+                                    Dry run all AI rules — evaluate and log, but do not modify mail
                                 </label>
                             </div>
                             <div class="form-group">
@@ -1787,76 +1803,20 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="field-label">Review score</label>
-                                <input type="number" id="ai-review-threshold" min="0" max="99" />
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Probable spam score</label>
-                                <input type="number" id="ai-spam-threshold" min="1" max="100" />
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Review action</label>
-                                <select id="ai-review-action">
-                                    <option value="none">Do nothing</option>
-                                    <option value="label">Add label</option>
-                                    <option value="label+archive">Label + archive</option>
-                                    <option value="trash+label">Label + trash</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Review label</label>
-                                <input type="text" id="ai-review-label" />
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Probable spam action</label>
-                                <select id="ai-spam-action">
-                                    <option value="none">Do nothing</option>
-                                    <option value="label">Add label</option>
-                                    <option value="label+archive">Label + archive</option>
-                                    <option value="trash+label">Label + trash</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Probable spam label</label>
-                                <input type="text" id="ai-spam-label" />
-                            </div>
-                            <div class="form-group">
-                                <label class="field-label">Messages per run</label>
+                                <label class="field-label">AI evaluations per run</label>
                                 <input type="number" id="ai-max-per-run" min="1" max="50" />
                             </div>
                             <div class="form-group">
                                 <label class="field-label">Maximum body characters</label>
                                 <input type="number" id="ai-max-body" min="500" max="20000" step="500" />
                             </div>
-                            <div class="form-group form-full">
-                                <label class="field-label">Allowlist</label>
-                                <textarea
-                                    class="settings-textarea"
-                                    id="ai-allowlist"
-                                    placeholder="friend@example.com, mycompany.com"
-                                ></textarea>
-                                <div class="settings-help">
-                                    Email addresses or domains separated by commas, spaces, or new lines. Starred and Gmail-important threads are also skipped.
-                                </div>
-                            </div>
-                            <div class="form-group form-full">
-                                <label class="field-label">Personal classification instructions</label>
-                                <textarea
-                                    class="settings-textarea"
-                                    id="ai-custom-prompt"
-                                    placeholder="Example: Job offers are wanted. Crypto promotions are always spam."
-                                ></textarea>
-                            </div>
                         </div>
                         <div class="settings-help" style="margin-bottom: 14px">
-                            Only sender, recipient, subject, date, and a limited plain-text body are sent to OpenRouter. Attachments are never sent. Start in dry-run mode and review the Activity Log before enabling actions.
+                            Create AI rules on the Rules page. Each rule has its own prompt, scope, threshold, and action. Sender, recipient, subject, date, and a limited text body are sent to OpenRouter; attachments are never sent.
                         </div>
                         <div class="action-strip">
                             <button class="btn btn-primary" id="ai-save-btn" onclick="saveAiSettings()">
                                 Save AI Settings
-                            </button>
-                            <button class="btn btn-ghost" id="ai-test-btn" onclick="testAiFiltering()">
-                                Test 5 Recent Emails
                             </button>
                             <button class="btn btn-ghost" onclick="clearAiCache()">
                                 Clear AI Cache
@@ -1865,7 +1825,6 @@
                                 Remove API Key
                             </button>
                         </div>
-                        <div class="test-result" id="ai-test-result"></div>
                     </div>
                     <div class="card">
                         <div class="card-title">
@@ -2231,6 +2190,13 @@
                             <input type="text" id="e-name" />
                         </div>
                         <div class="form-group">
+                            <label class="field-label">Rule Type</label>
+                            <select id="e-type" onchange="toggleRuleType('e')">
+                                <option value="pattern">⚡ Pattern Rule</option>
+                                <option value="ai">🤖 AI Rule</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label class="field-label">Action</label>
                             <select
                                 id="e-action"
@@ -2324,8 +2290,17 @@
                                 >
                             </div>
                         </div>
+                        <div class="form-group form-full" id="e-ai-fields" style="display: none">
+                            <label class="field-label">AI Rule Prompt</label>
+                            <textarea class="settings-textarea" id="e-ai-prompt"></textarea>
+                            <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
+                            <input type="number" id="e-ai-threshold" min="1" max="100" value="95" />
+                            <div class="settings-help">
+                                AI rules cannot permanently delete mail. Use Move to Trash for a recoverable action.
+                            </div>
+                        </div>
                     </div>
-                    <div style="margin-bottom: 12px">
+                    <div style="margin-bottom: 12px" id="e-pattern-fields">
                         <div
                             style="
                                 display: flex;
@@ -2372,9 +2347,9 @@
                     <div style="margin-bottom: 10px">
                         <button
                             class="btn btn-ghost btn-sm"
-                            onclick="testRuleForm('e', 'e-test-result')"
+                            onclick="testCurrentRule('e', 'e-test-result')"
                         >
-                            🔍 Test Pattern
+                            🔍 Test Rule
                         </button>
                         <div
                             class="test-result"
@@ -2440,10 +2415,6 @@
             var logicState = { r: "AND", e: "AND" };
             var draggedRuleId = null;
             var activePatternInput = null;
-            var currentAiSettings = {
-                reviewThreshold: 85,
-                spamThreshold: 98,
-            };
 
             // ---- mobile ----
             function toggleSidebar() {
@@ -2695,7 +2666,23 @@
                     ? "Regex"
                     : mode === "equals"
                       ? "Equals"
-                      : "Contains";
+                      : mode === "score"
+                        ? "AI score"
+                        : "Contains";
+            }
+
+            function toggleRuleType(prefix) {
+                var type = document.getElementById(prefix + "-type").value;
+                var isAi = type === "ai";
+                document.getElementById(prefix + "-ai-fields").style.display =
+                    isAi ? "flex" : "none";
+                document.getElementById(prefix + "-pattern-fields").style.display =
+                    isAi ? "none" : "block";
+                var action = document.getElementById(prefix + "-action");
+                var deleteOption = action.querySelector('option[value="delete"]');
+                if (deleteOption) deleteOption.disabled = isAi;
+                if (isAi && action.value === "delete") action.value = "trash";
+                toggleLabel(prefix + "-label-group", prefix + "-action");
             }
 
             function addConditionRow(prefix, cond) {
@@ -2987,7 +2974,13 @@
                         var logic = r.logic || "AND";
                         var conds = r.conditions || [];
 
-                        var condHTML = conds
+                        var condHTML = r.type === "ai"
+                            ? '<div class="rule-cond-row"><span class="pill pill-field">🤖 AI</span><span class="pill pill-pattern">' +
+                              esc(r.aiPrompt) +
+                              '</span><span class="pill pill-scope">SCORE ≥ ' +
+                              esc(r.aiThreshold) +
+                              "</span></div>"
+                            : conds
                             .map(function (c, i) {
                                 var badge =
                                     i === 0
@@ -3296,17 +3289,35 @@
             // ---- add rule ----
             function addRule() {
                 var name = document.getElementById("r-name").value.trim();
+                var type = document.getElementById("r-type").value;
+                var aiPrompt = document.getElementById("r-ai-prompt").value.trim();
+                var aiThreshold = parseInt(
+                    document.getElementById("r-ai-threshold").value,
+                    10,
+                );
                 var action = document.getElementById("r-action").value;
                 var label = document.getElementById("r-label").value.trim();
                 var scope = getScope("r-scope-group");
                 var conds = getConditions("r");
                 var logic = logicState["r"];
 
-                if (!conds.length) {
+                if (type !== "ai" && !conds.length) {
                     toast("Add at least one condition", "error");
                     return;
                 }
-                var err = validateConditions(conds);
+                if (type === "ai" && !aiPrompt) {
+                    toast("Enter an AI rule prompt", "error");
+                    return;
+                }
+                if (type === "ai" && (aiThreshold < 1 || aiThreshold > 100)) {
+                    toast("AI threshold must be between 1 and 100", "error");
+                    return;
+                }
+                if (type === "ai" && action === "delete") {
+                    toast("AI rules cannot permanently delete mail", "error");
+                    return;
+                }
+                var err = type === "ai" ? null : validateConditions(conds);
                 if (err) {
                     toast(err, "error");
                     return;
@@ -3329,6 +3340,8 @@
                         toast("Rule added ✓", "success");
                         document.getElementById("r-name").value = "";
                         document.getElementById("r-label").value = "";
+                        document.getElementById("r-ai-prompt").value = "";
+                        document.getElementById("r-ai-threshold").value = "95";
                         document.getElementById("r-conditions-list").innerHTML =
                             "";
                         addConditionRow("r");
@@ -3340,8 +3353,13 @@
                         toast("Error: " + e.message, "error");
                     })
                     .addRule({
-                        name: name || conds[0].pattern,
-                        conditions: conds,
+                        name:
+                            name ||
+                            (type === "ai" ? aiPrompt.substring(0, 60) : conds[0].pattern),
+                        type: type,
+                        aiPrompt: aiPrompt,
+                        aiThreshold: aiThreshold,
+                        conditions: type === "ai" ? [] : conds,
                         logic: logic,
                         action: action,
                         label: label,
@@ -3403,6 +3421,12 @@
                 if (!rule) return;
                 editingRuleId = id;
                 document.getElementById("e-name").value = rule.name || "";
+                document.getElementById("e-type").value =
+                    rule.type === "ai" ? "ai" : "pattern";
+                document.getElementById("e-ai-prompt").value =
+                    rule.aiPrompt || "";
+                document.getElementById("e-ai-threshold").value =
+                    rule.aiThreshold || 95;
                 document.getElementById("e-action").value =
                     rule.action || "trash";
                 document.getElementById("e-label").value = rule.label || "";
@@ -3416,6 +3440,7 @@
                     addConditionRow("e", c);
                 });
                 if (!list.children.length) addConditionRow("e");
+                toggleRuleType("e");
                 document
                     .getElementById("e-test-result")
                     .classList.remove("show");
@@ -3433,10 +3458,28 @@
 
             function saveEdit() {
                 if (!editingRuleId) return;
+                var type = document.getElementById("e-type").value;
+                var aiPrompt = document.getElementById("e-ai-prompt").value.trim();
+                var aiThreshold = parseInt(
+                    document.getElementById("e-ai-threshold").value,
+                    10,
+                );
                 var action = document.getElementById("e-action").value;
                 var label = document.getElementById("e-label").value.trim();
                 var conds = getConditions("e");
-                var err = validateConditions(conds);
+                if (type === "ai" && !aiPrompt) {
+                    toast("Enter an AI rule prompt", "error");
+                    return;
+                }
+                if (type === "ai" && (aiThreshold < 1 || aiThreshold > 100)) {
+                    toast("AI threshold must be between 1 and 100", "error");
+                    return;
+                }
+                if (type === "ai" && action === "delete") {
+                    toast("AI rules cannot permanently delete mail", "error");
+                    return;
+                }
+                var err = type === "ai" ? null : validateConditions(conds);
                 if (err) {
                     toast(err, "error");
                     return;
@@ -3455,8 +3498,11 @@
                     id: editingRuleId,
                     name:
                         document.getElementById("e-name").value.trim() ||
-                        conds[0].pattern,
-                    conditions: conds,
+                        (type === "ai" ? aiPrompt.substring(0, 60) : conds[0].pattern),
+                    type: type,
+                    aiPrompt: aiPrompt,
+                    aiThreshold: aiThreshold,
+                    conditions: type === "ai" ? [] : conds,
                     logic: logicState["e"],
                     action: action,
                     label: label,
@@ -3481,6 +3527,90 @@
             }
 
             // ---- test ----
+            function testCurrentRule(prefix, resultId) {
+                if (document.getElementById(prefix + "-type").value === "ai") {
+                    testAiRuleForm(prefix, resultId);
+                } else {
+                    testRuleForm(prefix, resultId);
+                }
+            }
+
+            function testAiRuleForm(prefix, resultId) {
+                var prompt = document
+                    .getElementById(prefix + "-ai-prompt")
+                    .value.trim();
+                var threshold = parseInt(
+                    document.getElementById(prefix + "-ai-threshold").value,
+                    10,
+                );
+                var resultEl = document.getElementById(resultId);
+                if (!prompt) {
+                    toast("Enter an AI rule prompt", "error");
+                    return;
+                }
+                if (threshold < 1 || threshold > 100) {
+                    toast("AI threshold must be between 1 and 100", "error");
+                    return;
+                }
+                resultEl.innerHTML =
+                    '<span class="spin"></span> Testing AI rule on up to 5 recent messages…';
+                resultEl.classList.add("show");
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (!res.results || !res.results.length) {
+                            resultEl.innerHTML =
+                                '<span style="color:var(--muted)">No recent messages found in this scope.</span>';
+                            return;
+                        }
+                        resultEl.innerHTML = res.results
+                            .map(function (item) {
+                                var color = item.matched
+                                    ? "var(--danger)"
+                                    : "var(--success)";
+                                return (
+                                    '<div class="debug-msg">' +
+                                    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px">' +
+                                    '<strong style="color:' +
+                                    color +
+                                    '">' +
+                                    (item.matched ? "MATCH" : "NO MATCH") +
+                                    " · Score " +
+                                    item.matchScore +
+                                    "</strong>" +
+                                    '<span style="color:var(--muted)">confidence ' +
+                                    item.confidence +
+                                    "%</span></div>" +
+                                    "<strong>" +
+                                    esc(item.from) +
+                                    "</strong><div>" +
+                                    esc(item.subject) +
+                                    '</div><div class="actual-val">' +
+                                    esc(item.reason) +
+                                    "</div></div>"
+                                );
+                            })
+                            .join("");
+                    })
+                    .withFailureHandler(function (e) {
+                        resultEl.innerHTML =
+                            '<span style="color:var(--danger)">Error: ' +
+                            esc(e.message) +
+                            "</span>";
+                    })
+                    .testAiRule({
+                        type: "ai",
+                        name:
+                            document.getElementById(prefix + "-name").value.trim() ||
+                            "AI rule test",
+                        aiPrompt: prompt,
+                        aiThreshold: threshold,
+                        action: document.getElementById(prefix + "-action").value,
+                        label: document.getElementById(prefix + "-label").value.trim(),
+                        scope: getScope(prefix + "-scope-group"),
+                        conditions: [],
+                    });
+            }
+
             function testRuleForm(prefix, resultId) {
                 var conds = getConditions(prefix);
                 var logic = logicState[prefix];
@@ -3655,33 +3785,14 @@
             function loadAiSettings() {
                 google.script.run
                     .withSuccessHandler(function (ai) {
-                        currentAiSettings = ai;
-                        document.getElementById("ai-enabled").checked =
-                            ai.enabled === true;
                         document.getElementById("ai-dry-run").checked =
                             ai.dryRun !== false;
                         document.getElementById("ai-model").value =
                             ai.model || "openai/gpt-4o-mini";
-                        document.getElementById("ai-review-threshold").value =
-                            ai.reviewThreshold;
-                        document.getElementById("ai-spam-threshold").value =
-                            ai.spamThreshold;
-                        document.getElementById("ai-review-action").value =
-                            ai.reviewAction;
-                        document.getElementById("ai-spam-action").value =
-                            ai.spamAction;
-                        document.getElementById("ai-review-label").value =
-                            ai.reviewLabel || "AI/Review";
-                        document.getElementById("ai-spam-label").value =
-                            ai.spamLabel || "AI/Probable Spam";
                         document.getElementById("ai-max-per-run").value =
                             ai.maxPerRun;
                         document.getElementById("ai-max-body").value =
                             ai.maxBodyChars;
-                        document.getElementById("ai-allowlist").value =
-                            ai.allowlist || "";
-                        document.getElementById("ai-custom-prompt").value =
-                            ai.customPrompt || "";
                         document.getElementById("ai-api-key").value = "";
                         document.getElementById("ai-key-status").textContent =
                             ai.hasApiKey
@@ -3696,28 +3807,9 @@
 
             function collectAiSettings() {
                 return {
-                    enabled: document.getElementById("ai-enabled").checked,
                     dryRun: document.getElementById("ai-dry-run").checked,
                     apiKey: document.getElementById("ai-api-key").value.trim(),
                     model: document.getElementById("ai-model").value.trim(),
-                    reviewThreshold: parseInt(
-                        document.getElementById("ai-review-threshold").value,
-                        10,
-                    ),
-                    spamThreshold: parseInt(
-                        document.getElementById("ai-spam-threshold").value,
-                        10,
-                    ),
-                    reviewAction:
-                        document.getElementById("ai-review-action").value,
-                    spamAction:
-                        document.getElementById("ai-spam-action").value,
-                    reviewLabel: document
-                        .getElementById("ai-review-label")
-                        .value.trim(),
-                    spamLabel: document
-                        .getElementById("ai-spam-label")
-                        .value.trim(),
                     maxPerRun: parseInt(
                         document.getElementById("ai-max-per-run").value,
                         10,
@@ -3726,12 +3818,6 @@
                         document.getElementById("ai-max-body").value,
                         10,
                     ),
-                    allowlist: document
-                        .getElementById("ai-allowlist")
-                        .value.trim(),
-                    customPrompt: document
-                        .getElementById("ai-custom-prompt")
-                        .value.trim(),
                 };
             }
 
@@ -3741,16 +3827,9 @@
                     toast("Enter an OpenRouter model", "error");
                     return;
                 }
-                if (settings.spamThreshold <= settings.reviewThreshold) {
-                    toast("Spam score must be higher than review score", "error");
-                    return;
-                }
                 if (
-                    settings.enabled &&
                     !settings.dryRun &&
-                    !confirm(
-                        "Enable live AI actions? Messages above your thresholds may be labeled, archived, or moved to Trash.",
-                    )
+                    !confirm("Disable dry run? Enabled AI rules may now modify matching mail.")
                 ) {
                     return;
                 }
@@ -3772,69 +3851,6 @@
                     .saveAiSettings(settings);
             }
 
-            function testAiFiltering() {
-                var btn = document.getElementById("ai-test-btn");
-                var resultEl = document.getElementById("ai-test-result");
-                btn.disabled = true;
-                btn.textContent = "Classifying…";
-                resultEl.classList.add("show");
-                resultEl.innerHTML =
-                    '<span class="spin"></span> Sending up to 5 recent eligible emails to OpenRouter…';
-                google.script.run
-                    .withSuccessHandler(function (res) {
-                        btn.disabled = false;
-                        btn.textContent = "Test 5 Recent Emails";
-                        if (!res.results || !res.results.length) {
-                            resultEl.innerHTML =
-                                '<span style="color:var(--muted)">No eligible unread Inbox messages found.</span>';
-                            return;
-                        }
-                        resultEl.innerHTML = res.results
-                            .map(function (item) {
-                                var color =
-                                    item.spamScore >=
-                                    currentAiSettings.spamThreshold
-                                        ? "var(--danger)"
-                                        : item.spamScore >=
-                                            currentAiSettings.reviewThreshold
-                                          ? "var(--warning)"
-                                          : "var(--success)";
-                                return (
-                                    '<div class="debug-msg">' +
-                                    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px">' +
-                                    '<strong style="color:' +
-                                    color +
-                                    '">Score ' +
-                                    item.spamScore +
-                                    "</strong>" +
-                                    '<span class="pill pill-scope">' +
-                                    esc(item.category) +
-                                    "</span>" +
-                                    '<span style="color:var(--muted)">confidence ' +
-                                    item.confidence +
-                                    "%</span></div>" +
-                                    "<strong>" +
-                                    esc(item.from) +
-                                    "</strong><div>" +
-                                    esc(item.subject) +
-                                    '</div><div class="actual-val">' +
-                                    esc(item.reason) +
-                                    "</div></div>"
-                                );
-                            })
-                            .join("");
-                    })
-                    .withFailureHandler(function (e) {
-                        btn.disabled = false;
-                        btn.textContent = "Test 5 Recent Emails";
-                        resultEl.innerHTML =
-                            '<span style="color:var(--danger)">Error: ' +
-                            esc(e.message) +
-                            "</span>";
-                    })
-                    .testAiFiltering();
-            }
-
             function clearAiCache() {
                 if (!confirm("Clear AI classification cache? Eligible emails may be classified again."))
                     return;
@@ -3849,11 +3865,11 @@
             }
 
             function clearAiApiKey() {
-                if (!confirm("Remove the saved OpenRouter API key and disable AI filtering?"))
+                if (!confirm("Remove the saved OpenRouter API key? AI rules will pause until another key is saved."))
                     return;
                 google.script.run
                     .withSuccessHandler(function () {
-                        toast("API key removed; AI filtering disabled", "info");
+                        toast("API key removed; AI rules are paused", "info");
                         loadAiSettings();
                     })
                     .withFailureHandler(function (e) {
@@ -3886,6 +3902,8 @@
                                 var col =
                                     l.action === "delete"
                                         ? "var(--danger)"
+                                        : l.action === "AI_DRY_RUN_MATCH"
+                                          ? "var(--warning)"
                                         : l.action === "trash"
                                           ? "#ff7a8a"
                                           : l.action === "archive"
@@ -3955,10 +3973,10 @@
                                     l.aiScore !== null &&
                                     l.aiScore !== undefined
                                         ? '<div class="log-section"><div class="log-section-label">AI classification</div>' +
-                                          '<div style="color:var(--text);margin-bottom:5px"><strong>Spam score: ' +
+                                          '<div style="color:var(--text);margin-bottom:5px"><strong>Match score: ' +
                                           l.aiScore +
-                                          '</strong> · ' +
-                                          esc(l.aiCategory || "unknown") +
+                                          '</strong>' +
+                                          (l.aiCategory ? " · " + esc(l.aiCategory) : "") +
                                           " · confidence " +
                                           l.aiConfidence +
                                           "%</div>" +

@@ -9,28 +9,32 @@ It lets you:
 - match email `From`, `To`, `Subject`, and `Body`
 - choose between `Contains`, `Equals`, and `Regex` matching
 - automatically `trash`, `archive`, `label`, `star`, `mark read`, or `delete`
-- optionally classify unread Inbox mail with AI through OpenRouter
+- create prompt-based AI rules across selectable Gmail scopes through OpenRouter
 - review activity logs and debug why a rule matched
 
 The app runs on a time trigger in the background and keeps checking for new emails based on your configured interval.
 
-## AI Filtering
+## AI Rules
 
-AI filtering is optional and disabled by default. In **Settings → AI Filtering via OpenRouter**, you can configure:
+AI is available as a rule type rather than as a global inbox classifier. Provider-wide controls live in **Settings → AI Rule Settings**:
 
-- an OpenRouter API key and structured-output-compatible model
-- review and probable-spam score thresholds
-- a safe action and Gmail label for each threshold
-- the maximum number of messages and body characters processed per run
-- allowlisted sender addresses and domains
-- personal classification instructions
-- dry-run mode, which logs classifications without changing mail
+- OpenRouter API key and structured-output-compatible model
+- global dry-run mode
+- maximum AI evaluations per scheduled run
+- maximum message-body characters sent to the model
 
-The AI pass runs after normal rules and only scans recent unread Inbox messages. Messages already handled by a normal rule, starred messages, Gmail-important threads, and allowlisted senders are skipped. Results are cached so unchanged mail is not repeatedly sent to the model.
+Each AI rule has its own:
 
-Start with dry-run enabled and inspect the Activity Log. The default live actions use labels, archive, or Trash; AI output is never allowed to permanently delete mail or select an arbitrary Gmail action.
+- natural-language matching prompt
+- Inbox, Spam, Trash, Sent, or Everywhere scope
+- minimum match score from 1–100
+- Gmail action and optional label
 
-The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited plain-text body are sent to the selected OpenRouter model; attachments are not sent. Deploy the web app with access restricted to your own account.
+Pattern rules run first, followed by AI rules in their displayed order. If an earlier rule handles a message, later AI rules skip it. AI results are cached per message and rule configuration so unchanged mail is not repeatedly sent to the model. Editing a prompt, threshold, scope, action, or model creates a new cache version.
+
+Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies a match score, confidence, and explanation; the configured rule controls the Gmail action. AI rules cannot permanently delete mail—use Trash for a recoverable action.
+
+The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited text body are sent to the selected OpenRouter model; attachments are not sent. Selecting Sent or Everywhere can send your own outgoing message text to the model. Deploy the web app with access restricted to your own account.
 
 ## How It Works
 
@@ -43,7 +47,7 @@ Each rule can contain one or more conditions, for example:
 
 When a message matches a rule, the selected action is applied to that message.
 
-Rules run from top to bottom, so order matters.
+Pattern rules run top-to-bottom first; AI rules then run top-to-bottom.
 
 ## Install
 
@@ -66,7 +70,7 @@ Rules run from top to bottom, so order matters.
 10. Open the deployed web app UI and create your rules.
 11. Activate auto-run so it keeps working in the background.
 
-For AI filtering, open **Settings**, save an OpenRouter API key, keep **Dry run** enabled, save the AI settings, and use **Test 5 Recent Emails** before enabling automatic AI filtering.
+For AI rules, save an OpenRouter API key in **Settings**, keep **Dry run** enabled, create an **AI Rule** on the Rules page, and use **Test Rule** before enabling live actions.
 
 After authorization, it can run silently in the background on the configured schedule.
 
