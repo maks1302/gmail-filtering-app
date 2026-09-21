@@ -104,6 +104,7 @@ function normalizeAiSettings(input) {
   return {
     dryRun: input.dryRun !== false,
     model: String(input.model || "openai/gpt-4o-mini").trim(),
+    verifierModel: String(input.verifierModel || "").trim(),
     maxPerRun: isFinite(maxPerRun) ? maxPerRun : 20,
     maxBodyChars: isFinite(maxBodyChars) ? maxBodyChars : 6000,
   };
@@ -111,8 +112,10 @@ function normalizeAiSettings(input) {
 
 function validateAiSettings(ai) {
   if (!ai.model) throw new Error("AI model is required");
+  if (ai.verifierModel && ai.verifierModel === ai.model)
+    throw new Error("Primary and verifier models must be different");
   if (ai.maxPerRun < 1 || ai.maxPerRun > 50)
-    throw new Error("AI messages per run must be between 1 and 50");
+    throw new Error("AI evaluations per run must be between 1 and 50");
   if (ai.maxBodyChars < 500 || ai.maxBodyChars > 20000)
     throw new Error("AI body limit must be between 500 and 20,000 characters");
   return true;
@@ -183,6 +186,7 @@ function updateRule(updated) {
       type: updated.type,
       aiPrompt: updated.aiPrompt,
       aiThreshold: updated.aiThreshold,
+      aiVerification: updated.aiVerification,
       conditions: updated.conditions,
       logic: updated.logic || "AND",
       action: updated.action,
@@ -394,12 +398,20 @@ function debugRule(ruleId) {
                 mode: "score",
                 matched: result.matched,
                 actualValue:
-                  "Score " +
+                  "Primary score " +
                   result.matchScore +
                   "/100 (threshold " +
                   rule.aiThreshold +
                   "). " +
-                  result.reason,
+                  result.reason +
+                  (result.verifierScore !== null
+                    ? " Verifier score " +
+                      result.verifierScore +
+                      "/100 (" +
+                      rule.aiVerification.toUpperCase() +
+                      "). " +
+                      result.verifierReason
+                    : ""),
               },
             ],
           };
@@ -672,6 +684,21 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
 
   rules.forEach(function (rule) {
     if (remaining <= 0) return;
+    var usesVerifier = rule.aiVerification !== "single";
+    if (usesVerifier && !ai.verifierModel) {
+      logs.push({
+        ts: new Date().toISOString(),
+        ruleId: rule.id,
+        ruleName: rule.name || "AI rule",
+        action: "ERROR",
+        subject: "Verifier model is required for this AI rule",
+        conditions: [],
+      });
+      return;
+    }
+    var evaluationsPerMessage = usesVerifier ? 2 : 1;
+    var candidateLimit = Math.floor(remaining / evaluationsPerMessage);
+    if (candidateLimit <= 0) return;
     var version = getAiRuleVersion_(rule, ai);
     var candidates = getAiRuleCandidates_(
       rule,
@@ -680,15 +707,31 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
       actionedMessageIds,
       cache,
       version,
-      remaining,
+      candidateLimit,
     );
-    remaining -= candidates.length;
+    remaining -= candidates.length * evaluationsPerMessage;
 
     for (var start = 0; start < candidates.length; start += AI_BATCH_SIZE) {
       var batch = candidates.slice(start, start + AI_BATCH_SIZE);
       var classifications;
+      var verifierClassifications = [];
       try {
-        classifications = classifyAiRuleBatch_(batch, rule, ai, apiKey);
+        classifications = classifyAiRuleBatch_(
+          batch,
+          rule,
+          ai,
+          apiKey,
+          ai.model,
+        );
+        if (usesVerifier) {
+          verifierClassifications = classifyAiRuleBatch_(
+            batch,
+            rule,
+            ai,
+            apiKey,
+            ai.verifierModel,
+          );
+        }
       } catch (e) {
         logs.push({
           ts: new Date().toISOString(),
@@ -705,11 +748,39 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
       classifications.forEach(function (result) {
         byId[String(result.id || "")] = result;
       });
+      var verifierById = {};
+      verifierClassifications.forEach(function (result) {
+        verifierById[String(result.id || "")] = result;
+      });
 
       batch.forEach(function (candidate) {
         var result = normalizeAiRuleClassification_(byId[candidate.id]);
-        if (!result) return;
-        var matched = result.matchScore >= rule.aiThreshold;
+        var verifierResult = usesVerifier
+          ? normalizeAiRuleClassification_(verifierById[candidate.id])
+          : null;
+        if (!result || (usesVerifier && !verifierResult)) {
+          logs.push({
+            ts: new Date().toISOString(),
+            ruleId: rule.id,
+            ruleName: rule.name || "AI rule",
+            action: "ERROR",
+            messageId: candidate.id,
+            threadId: candidate.threadId,
+            from: candidate.from,
+            subject: "A model omitted or returned an invalid verdict; no action taken",
+            conditions: [],
+          });
+          return;
+        }
+        var primaryMatched = result.matchScore >= rule.aiThreshold;
+        var verifierMatched =
+          !!verifierResult && verifierResult.matchScore >= rule.aiThreshold;
+        var matched =
+          rule.aiVerification === "all"
+            ? primaryMatched && verifierMatched
+            : rule.aiVerification === "any"
+              ? primaryMatched || verifierMatched
+              : primaryMatched;
 
         try {
           if (matched && !ai.dryRun) {
@@ -731,6 +802,16 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
             aiScore: result.matchScore,
             aiConfidence: result.confidence,
             aiReason: result.reason,
+            aiModel: ai.model,
+            aiVerifierScore: verifierResult
+              ? verifierResult.matchScore
+              : null,
+            aiVerifierConfidence: verifierResult
+              ? verifierResult.confidence
+              : null,
+            aiVerifierReason: verifierResult ? verifierResult.reason : "",
+            aiVerifierModel: verifierResult ? ai.verifierModel : "",
+            aiVerification: rule.aiVerification,
           });
           return;
         }
@@ -754,6 +835,16 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
             aiScore: result.matchScore,
             aiConfidence: result.confidence,
             aiReason: result.reason,
+            aiModel: ai.model,
+            aiVerifierScore: verifierResult
+              ? verifierResult.matchScore
+              : null,
+            aiVerifierConfidence: verifierResult
+              ? verifierResult.confidence
+              : null,
+            aiVerifierReason: verifierResult ? verifierResult.reason : "",
+            aiVerifierModel: verifierResult ? ai.verifierModel : "",
+            aiVerification: rule.aiVerification,
           });
         }
 
@@ -777,6 +868,9 @@ function testAiRule(ruleInput) {
     AI_API_KEY_KEY,
   );
   if (!apiKey) throw new Error("Save an OpenRouter API key first");
+  var usesVerifier = rule.aiVerification !== "single";
+  if (usesVerifier && !ai.verifierModel)
+    throw new Error("Save a verifier model in Settings first");
   var since = new Date(Date.now() - MAX_SCAN_LOOKBACK_DAYS * 86400000);
   var candidates = getAiRuleCandidates_(
     rule,
@@ -788,10 +882,29 @@ function testAiRule(ruleInput) {
     5,
   );
   if (!candidates.length) return { ok: true, results: [] };
-  var results = classifyAiRuleBatch_(candidates, rule, ai, apiKey);
+  var results = classifyAiRuleBatch_(
+    candidates,
+    rule,
+    ai,
+    apiKey,
+    ai.model,
+  );
+  var verifierResults = usesVerifier
+    ? classifyAiRuleBatch_(
+        candidates,
+        rule,
+        ai,
+        apiKey,
+        ai.verifierModel,
+      )
+    : [];
   var candidateMap = {};
   candidates.forEach(function (candidate) {
     candidateMap[candidate.id] = candidate;
+  });
+  var verifierMap = {};
+  verifierResults.forEach(function (result) {
+    verifierMap[String(result.id || "")] = result;
   });
   return {
     ok: true,
@@ -802,6 +915,13 @@ function testAiRule(ruleInput) {
         return result && candidateMap[result.id];
       })
       .map(function (result) {
+        var verifierResult = usesVerifier
+          ? normalizeAiRuleClassification_(verifierMap[result.id])
+          : null;
+        if (usesVerifier && !verifierResult) return null;
+        var primaryMatched = result.matchScore >= rule.aiThreshold;
+        var verifierMatched =
+          !!verifierResult && verifierResult.matchScore >= rule.aiThreshold;
         return {
           from: candidateMap[result.id].from,
           subject: candidateMap[result.id].subject,
@@ -809,9 +929,21 @@ function testAiRule(ruleInput) {
           matchScore: result.matchScore,
           confidence: result.confidence,
           reason: result.reason,
-          matched: result.matchScore >= rule.aiThreshold,
+          verifierScore: verifierResult ? verifierResult.matchScore : null,
+          verifierConfidence: verifierResult
+            ? verifierResult.confidence
+            : null,
+          verifierReason: verifierResult ? verifierResult.reason : "",
+          verification: rule.aiVerification,
+          matched:
+            rule.aiVerification === "all"
+              ? primaryMatched && verifierMatched
+              : rule.aiVerification === "any"
+                ? primaryMatched || verifierMatched
+                : primaryMatched,
         };
-      }),
+      })
+      .filter(Boolean),
   };
 }
 
@@ -854,7 +986,7 @@ function getAiRuleCandidates_(
   return candidates;
 }
 
-function classifyAiRuleBatch_(candidates, rule, ai, apiKey) {
+function classifyAiRuleBatch_(candidates, rule, ai, apiKey, model) {
   var emails = candidates.map(function (candidate) {
     return {
       id: candidate.id,
@@ -866,7 +998,7 @@ function classifyAiRuleBatch_(candidates, rule, ai, apiKey) {
     };
   });
   var payload = {
-    model: ai.model,
+    model: model || ai.model,
     temperature: 0,
     max_tokens: 1600,
     provider: { require_parameters: true },
@@ -980,10 +1112,13 @@ function getAiRuleVersion_(rule, ai) {
     JSON.stringify({
       id: rule.id || "",
       model: ai.model,
+      verifierModel:
+        rule.aiVerification === "single" ? "" : ai.verifierModel,
       dryRun: ai.dryRun,
       maxBodyChars: ai.maxBodyChars,
       prompt: rule.aiPrompt,
       threshold: rule.aiThreshold,
+      verification: rule.aiVerification,
       action: rule.action,
       label: rule.label,
       scope: rule.scope,
@@ -1251,6 +1386,10 @@ function normalizeRule(rule) {
     type: rule.type === "ai" ? "ai" : "pattern",
     aiPrompt: String(rule.aiPrompt || "").trim(),
     aiThreshold: isFinite(aiThreshold) ? aiThreshold : 95,
+    aiVerification:
+      rule.aiVerification === "all" || rule.aiVerification === "any"
+        ? rule.aiVerification
+        : "single",
     logic: rule.logic === "OR" ? "OR" : "AND",
     action: String(rule.action || "trash"),
     label: String(rule.label || ""),
@@ -1296,6 +1435,8 @@ function validateRule(rule) {
       throw new Error("AI rule prompt must be 4,000 characters or fewer");
     if (rule.aiThreshold < 1 || rule.aiThreshold > 100)
       throw new Error("AI rule threshold must be between 1 and 100");
+    if (["single", "all", "any"].indexOf(rule.aiVerification) === -1)
+      throw new Error("AI rule has an invalid verification mode");
   }
   if (
     (rule.action === "label" ||
@@ -1385,6 +1526,18 @@ function normalizeLogEntry(entry, ruleMap) {
       typeof entry.aiConfidence === "number" ? entry.aiConfidence : null,
     aiCategory: entry.aiCategory || "",
     aiReason: entry.aiReason || "",
+    aiModel: entry.aiModel || "",
+    aiVerifierScore:
+      typeof entry.aiVerifierScore === "number"
+        ? entry.aiVerifierScore
+        : null,
+    aiVerifierConfidence:
+      typeof entry.aiVerifierConfidence === "number"
+        ? entry.aiVerifierConfidence
+        : null,
+    aiVerifierReason: entry.aiVerifierReason || "",
+    aiVerifierModel: entry.aiVerifierModel || "",
+    aiVerification: entry.aiVerification || "single",
     conditions: (entry.conditions || []).map(function (cond) {
       return {
         field: cond.field || "",

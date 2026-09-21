@@ -18,7 +18,7 @@ The app runs on a time trigger in the background and keeps checking for new emai
 
 AI is available as a rule type rather than as a global inbox classifier. Provider-wide controls live in **Settings → AI Rule Settings**:
 
-- OpenRouter API key and structured-output-compatible model
+- OpenRouter API key, primary model, and optional verifier model
 - global dry-run mode
 - maximum AI evaluations per scheduled run
 - maximum message-body characters sent to the model
@@ -28,13 +28,16 @@ Each AI rule has its own:
 - natural-language matching prompt
 - Inbox, Spam, Trash, Sent, or Everywhere scope
 - minimum match score from 1–100
+- model agreement policy: Primary only, Both must match, or Either may match
 - Gmail action and optional label
 
-Pattern rules run first, followed by AI rules in their displayed order. If an earlier rule handles a message, later AI rules skip it. AI results are cached per message and rule configuration so unchanged mail is not repeatedly sent to the model. Editing a prompt, threshold, scope, action, or model creates a new cache version.
+The Rules UI uses a **Regex / Pattern** versus **AI Prompt** toggle. Pattern rules run first, followed by AI rules in their displayed order. If an earlier rule handles a message, later AI rules skip it. AI results are cached per message and rule configuration so unchanged mail is not repeatedly sent to the model. Editing a prompt, threshold, verification policy, scope, action, or model creates a new cache version.
 
-Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies a match score, confidence, and explanation; the configured rule controls the Gmail action. Permanent deletion is available for AI rules, but it is irreversible and an incorrect AI judgment can permanently remove legitimate mail. The UI requires explicit confirmation when saving that combination.
+For **Both**, each model must independently reach the rule threshold. For **Either**, one matching verdict is enough, which improves recall but raises false-positive risk. Two-model rules fail closed: if either API call fails or returns an invalid/missing verdict, no action is taken—even in Either mode. Each two-model message consumes two evaluations from the configured per-run limit.
 
-The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited text body are sent to the selected OpenRouter model; attachments are not sent. Selecting Sent or Everywhere can send your own outgoing message text to the model. Deploy the web app with access restricted to your own account.
+Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies match scores, confidence, and explanations; the configured rule controls the Gmail action. **Both models must match** is recommended for permanent deletion. Permanent deletion is irreversible, and correlated model errors can still remove legitimate mail; the UI requires explicit confirmation when saving that combination.
+
+The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited text body are sent to the selected model—or both models for verified rules; attachments are not sent. Selecting Sent or Everywhere can send your own outgoing message text to the provider. Deploy the web app with access restricted to your own account.
 
 ## How It Works
 

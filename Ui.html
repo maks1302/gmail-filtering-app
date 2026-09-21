@@ -417,6 +417,30 @@
                 font-size: 12px;
                 line-height: 1.55;
             }
+            .type-toggle {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                padding: 3px;
+                gap: 3px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: var(--bg3);
+            }
+            .type-btn {
+                border: 0;
+                border-radius: 5px;
+                padding: 7px 10px;
+                background: transparent;
+                color: var(--muted);
+                cursor: pointer;
+                font: inherit;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .type-btn.active {
+                color: white;
+                background: var(--accent);
+            }
 
             .warn-box {
                 background: rgba(251, 191, 36, 0.08);
@@ -1460,10 +1484,11 @@
                             </div>
                             <div class="form-group">
                                 <label class="field-label">Rule Type</label>
-                                <select id="r-type" onchange="toggleRuleType('r')">
-                                    <option value="pattern">⚡ Pattern Rule</option>
-                                    <option value="ai">🤖 AI Rule</option>
-                                </select>
+                                <input type="hidden" id="r-type" value="pattern" />
+                                <div class="type-toggle">
+                                    <button class="type-btn active" id="r-type-pattern" onclick="setRuleType('r', 'pattern')">⚡ Regex / Pattern</button>
+                                    <button class="type-btn" id="r-type-ai" onclick="setRuleType('r', 'ai')">🤖 AI Prompt</button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label class="field-label">Action</label>
@@ -1579,8 +1604,14 @@
                                 ></textarea>
                                 <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
                                 <input type="number" id="r-ai-threshold" min="1" max="100" value="95" />
+                                <label class="field-label" style="margin-top: 8px">Model Agreement</label>
+                                <select id="r-ai-verification">
+                                    <option value="single">Primary model only</option>
+                                    <option value="all">Both models must match</option>
+                                    <option value="any">Either model may match</option>
+                                </select>
                                 <div class="settings-help">
-                                    The configured action runs when the AI match score reaches this threshold. Permanent deletion is irreversible and may be triggered by an incorrect AI judgment.
+                                    “Both” is recommended for destructive actions; “Either” increases recall but also false-positive risk. Each model must reach this same threshold.
                                 </div>
                             </div>
                         </div>
@@ -1792,7 +1823,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="field-label">Model</label>
+                                <label class="field-label">Primary Model</label>
                                 <input
                                     type="text"
                                     id="ai-model"
@@ -1800,6 +1831,17 @@
                                 />
                                 <div class="settings-help">
                                     Must support OpenRouter structured outputs.
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Verifier Model</label>
+                                <input
+                                    type="text"
+                                    id="ai-verifier-model"
+                                    placeholder="e.g. google/gemini-2.5-flash"
+                                />
+                                <div class="settings-help">
+                                    Used only by AI rules configured for Both or Either.
                                 </div>
                             </div>
                             <div class="form-group">
@@ -1812,7 +1854,7 @@
                             </div>
                         </div>
                         <div class="settings-help" style="margin-bottom: 14px">
-                            Create AI rules on the Rules page. Each rule has its own prompt, scope, threshold, and action. Sender, recipient, subject, date, and a limited text body are sent to OpenRouter; attachments are never sent.
+                            Create AI rules on the Rules page. Two-model rules consume two evaluations per message. Sender, recipient, subject, date, and a limited text body are sent to both configured models; attachments are never sent.
                         </div>
                         <div class="action-strip">
                             <button class="btn btn-primary" id="ai-save-btn" onclick="saveAiSettings()">
@@ -2191,10 +2233,11 @@
                         </div>
                         <div class="form-group">
                             <label class="field-label">Rule Type</label>
-                            <select id="e-type" onchange="toggleRuleType('e')">
-                                <option value="pattern">⚡ Pattern Rule</option>
-                                <option value="ai">🤖 AI Rule</option>
-                            </select>
+                            <input type="hidden" id="e-type" value="pattern" />
+                            <div class="type-toggle">
+                                <button class="type-btn active" id="e-type-pattern" onclick="setRuleType('e', 'pattern')">⚡ Regex / Pattern</button>
+                                <button class="type-btn" id="e-type-ai" onclick="setRuleType('e', 'ai')">🤖 AI Prompt</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="field-label">Action</label>
@@ -2295,8 +2338,14 @@
                             <textarea class="settings-textarea" id="e-ai-prompt"></textarea>
                             <label class="field-label" style="margin-top: 8px">Minimum Match Score</label>
                             <input type="number" id="e-ai-threshold" min="1" max="100" value="95" />
+                            <label class="field-label" style="margin-top: 8px">Model Agreement</label>
+                            <select id="e-ai-verification">
+                                <option value="single">Primary model only</option>
+                                <option value="all">Both models must match</option>
+                                <option value="any">Either model may match</option>
+                            </select>
                             <div class="settings-help">
-                                Permanent deletion is irreversible and may be triggered by an incorrect AI judgment. Test in dry-run mode first.
+                                “Both” is recommended for destructive actions; “Either” increases recall but also false-positive risk. Each model must reach this same threshold.
                             </div>
                         </div>
                     </div>
@@ -2415,6 +2464,7 @@
             var logicState = { r: "AND", e: "AND" };
             var draggedRuleId = null;
             var activePatternInput = null;
+            var currentAiSettings = {};
 
             // ---- mobile ----
             function toggleSidebar() {
@@ -2674,11 +2724,22 @@
             function toggleRuleType(prefix) {
                 var type = document.getElementById(prefix + "-type").value;
                 var isAi = type === "ai";
+                document
+                    .getElementById(prefix + "-type-pattern")
+                    .classList.toggle("active", !isAi);
+                document
+                    .getElementById(prefix + "-type-ai")
+                    .classList.toggle("active", isAi);
                 document.getElementById(prefix + "-ai-fields").style.display =
                     isAi ? "flex" : "none";
                 document.getElementById(prefix + "-pattern-fields").style.display =
                     isAi ? "none" : "block";
                 toggleLabel(prefix + "-label-group", prefix + "-action");
+            }
+
+            function setRuleType(prefix, type) {
+                document.getElementById(prefix + "-type").value = type;
+                toggleRuleType(prefix);
             }
 
             function addConditionRow(prefix, cond) {
@@ -2975,6 +3036,14 @@
                               esc(r.aiPrompt) +
                               '</span><span class="pill pill-scope">SCORE ≥ ' +
                               esc(r.aiThreshold) +
+                              '</span><span class="pill pill-scope">' +
+                              esc(
+                                  r.aiVerification === "all"
+                                      ? "BOTH MODELS"
+                                      : r.aiVerification === "any"
+                                        ? "EITHER MODEL"
+                                        : "PRIMARY MODEL",
+                              ) +
                               "</span></div>"
                             : conds
                             .map(function (c, i) {
@@ -3291,6 +3360,9 @@
                     document.getElementById("r-ai-threshold").value,
                     10,
                 );
+                var aiVerification = document.getElementById(
+                    "r-ai-verification",
+                ).value;
                 var action = document.getElementById("r-action").value;
                 var label = document.getElementById("r-label").value.trim();
                 var scope = getScope("r-scope-group");
@@ -3311,9 +3383,19 @@
                 }
                 if (
                     type === "ai" &&
+                    aiVerification !== "single" &&
+                    !currentAiSettings.verifierModel
+                ) {
+                    toast("Configure a verifier model in Settings first", "error");
+                    return;
+                }
+                if (
+                    type === "ai" &&
                     action === "delete" &&
                     !confirm(
-                        "This AI rule will permanently delete matching email. AI can be wrong and deleted messages cannot be recovered. Save this rule anyway?",
+                        "This AI rule will permanently delete matching email using “" +
+                            aiVerification.toUpperCase() +
+                            "” model agreement. AI can be wrong and deleted messages cannot be recovered. Save this rule anyway?",
                     )
                 ) {
                     return;
@@ -3343,6 +3425,8 @@
                         document.getElementById("r-label").value = "";
                         document.getElementById("r-ai-prompt").value = "";
                         document.getElementById("r-ai-threshold").value = "95";
+                        document.getElementById("r-ai-verification").value =
+                            "single";
                         document.getElementById("r-conditions-list").innerHTML =
                             "";
                         addConditionRow("r");
@@ -3360,6 +3444,7 @@
                         type: type,
                         aiPrompt: aiPrompt,
                         aiThreshold: aiThreshold,
+                        aiVerification: aiVerification,
                         conditions: type === "ai" ? [] : conds,
                         logic: logic,
                         action: action,
@@ -3428,6 +3513,8 @@
                     rule.aiPrompt || "";
                 document.getElementById("e-ai-threshold").value =
                     rule.aiThreshold || 95;
+                document.getElementById("e-ai-verification").value =
+                    rule.aiVerification || "single";
                 document.getElementById("e-action").value =
                     rule.action || "trash";
                 document.getElementById("e-label").value = rule.label || "";
@@ -3465,6 +3552,9 @@
                     document.getElementById("e-ai-threshold").value,
                     10,
                 );
+                var aiVerification = document.getElementById(
+                    "e-ai-verification",
+                ).value;
                 var action = document.getElementById("e-action").value;
                 var label = document.getElementById("e-label").value.trim();
                 var conds = getConditions("e");
@@ -3478,9 +3568,19 @@
                 }
                 if (
                     type === "ai" &&
+                    aiVerification !== "single" &&
+                    !currentAiSettings.verifierModel
+                ) {
+                    toast("Configure a verifier model in Settings first", "error");
+                    return;
+                }
+                if (
+                    type === "ai" &&
                     action === "delete" &&
                     !confirm(
-                        "This AI rule will permanently delete matching email. AI can be wrong and deleted messages cannot be recovered. Save these changes anyway?",
+                        "This AI rule will permanently delete matching email using “" +
+                            aiVerification.toUpperCase() +
+                            "” model agreement. AI can be wrong and deleted messages cannot be recovered. Save these changes anyway?",
                     )
                 ) {
                     return;
@@ -3508,6 +3608,7 @@
                     type: type,
                     aiPrompt: aiPrompt,
                     aiThreshold: aiThreshold,
+                    aiVerification: aiVerification,
                     conditions: type === "ai" ? [] : conds,
                     logic: logicState["e"],
                     action: action,
@@ -3549,6 +3650,9 @@
                     document.getElementById(prefix + "-ai-threshold").value,
                     10,
                 );
+                var verification = document.getElementById(
+                    prefix + "-ai-verification",
+                ).value;
                 var resultEl = document.getElementById(resultId);
                 if (!prompt) {
                     toast("Enter an AI rule prompt", "error");
@@ -3556,6 +3660,13 @@
                 }
                 if (threshold < 1 || threshold > 100) {
                     toast("AI threshold must be between 1 and 100", "error");
+                    return;
+                }
+                if (
+                    verification !== "single" &&
+                    !currentAiSettings.verifierModel
+                ) {
+                    toast("Configure a verifier model in Settings first", "error");
                     return;
                 }
                 resultEl.innerHTML =
@@ -3585,13 +3696,24 @@
                                     "</strong>" +
                                     '<span style="color:var(--muted)">confidence ' +
                                     item.confidence +
-                                    "%</span></div>" +
+                                    "%</span>" +
+                                    (item.verifierScore !== null
+                                        ? '<span class="pill pill-scope">Verifier ' +
+                                          item.verifierScore +
+                                          " · " +
+                                          esc(item.verification.toUpperCase()) +
+                                          "</span>"
+                                        : "") +
+                                    "</div>" +
                                     "<strong>" +
                                     esc(item.from) +
                                     "</strong><div>" +
                                     esc(item.subject) +
                                     '</div><div class="actual-val">' +
                                     esc(item.reason) +
+                                    (item.verifierReason
+                                        ? " Verifier: " + esc(item.verifierReason)
+                                        : "") +
                                     "</div></div>"
                                 );
                             })
@@ -3610,6 +3732,7 @@
                             "AI rule test",
                         aiPrompt: prompt,
                         aiThreshold: threshold,
+                        aiVerification: verification,
                         action: document.getElementById(prefix + "-action").value,
                         label: document.getElementById(prefix + "-label").value.trim(),
                         scope: getScope(prefix + "-scope-group"),
@@ -3791,10 +3914,13 @@
             function loadAiSettings() {
                 google.script.run
                     .withSuccessHandler(function (ai) {
+                        currentAiSettings = ai;
                         document.getElementById("ai-dry-run").checked =
                             ai.dryRun !== false;
                         document.getElementById("ai-model").value =
                             ai.model || "openai/gpt-4o-mini";
+                        document.getElementById("ai-verifier-model").value =
+                            ai.verifierModel || "";
                         document.getElementById("ai-max-per-run").value =
                             ai.maxPerRun;
                         document.getElementById("ai-max-body").value =
@@ -3816,6 +3942,9 @@
                     dryRun: document.getElementById("ai-dry-run").checked,
                     apiKey: document.getElementById("ai-api-key").value.trim(),
                     model: document.getElementById("ai-model").value.trim(),
+                    verifierModel: document
+                        .getElementById("ai-verifier-model")
+                        .value.trim(),
                     maxPerRun: parseInt(
                         document.getElementById("ai-max-per-run").value,
                         10,
@@ -3831,6 +3960,13 @@
                 var settings = collectAiSettings();
                 if (!settings.model) {
                     toast("Enter an OpenRouter model", "error");
+                    return;
+                }
+                if (
+                    settings.verifierModel &&
+                    settings.verifierModel === settings.model
+                ) {
+                    toast("Primary and verifier models must be different", "error");
                     return;
                 }
                 if (
@@ -3979,15 +4115,34 @@
                                     l.aiScore !== null &&
                                     l.aiScore !== undefined
                                         ? '<div class="log-section"><div class="log-section-label">AI classification</div>' +
-                                          '<div style="color:var(--text);margin-bottom:5px"><strong>Match score: ' +
+                                          '<div style="color:var(--text);margin-bottom:5px"><strong>Primary' +
+                                          (l.aiModel ? " (" + esc(l.aiModel) + ")" : "") +
+                                          ": " +
                                           l.aiScore +
                                           '</strong>' +
                                           (l.aiCategory ? " · " + esc(l.aiCategory) : "") +
                                           " · confidence " +
                                           l.aiConfidence +
-                                          "%</div>" +
+                                          "%" +
+                                          (l.aiVerifierScore !== null &&
+                                          l.aiVerifierScore !== undefined
+                                              ? "<br><strong>Verifier" +
+                                                (l.aiVerifierModel
+                                                    ? " (" + esc(l.aiVerifierModel) + ")"
+                                                    : "") +
+                                                ": " +
+                                                l.aiVerifierScore +
+                                                "</strong> · confidence " +
+                                                l.aiVerifierConfidence +
+                                                "% · policy " +
+                                                esc((l.aiVerification || "all").toUpperCase())
+                                              : "") +
+                                          "</div>" +
                                           '<div class="actual-val">' +
                                           esc(l.aiReason || "") +
+                                          (l.aiVerifierReason
+                                              ? " Verifier: " + esc(l.aiVerifierReason)
+                                              : "") +
                                           "</div></div>"
                                         : "";
 
