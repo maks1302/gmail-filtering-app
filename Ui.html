@@ -516,6 +516,26 @@
                 border-color: var(--accent);
                 background: rgba(79, 124, 255, 0.08);
             }
+            .regex-ai-btn {
+                display: none;
+                flex: 0 0 auto;
+                min-width: 36px;
+                padding: 0 9px;
+                border-radius: 7px;
+                border: 1px solid rgba(124, 92, 252, 0.45);
+                background: rgba(124, 92, 252, 0.1);
+                color: #b6a4ff;
+                cursor: pointer;
+                font-size: 14px;
+                line-height: 1;
+            }
+            .regex-ai-btn.show {
+                display: block;
+            }
+            .regex-ai-btn:hover {
+                background: rgba(124, 92, 252, 0.2);
+                border-color: #a98cff;
+            }
             .condition-options {
                 display: inline-flex;
                 align-items: center;
@@ -1316,6 +1336,55 @@
             .pattern-editor-textarea:focus {
                 border-color: var(--accent);
             }
+            .regex-helper-grid {
+                display: grid;
+                grid-template-columns: 160px 1fr;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+            .regex-helper-result {
+                display: none;
+                margin-top: 18px;
+                padding-top: 18px;
+                border-top: 1px solid var(--border);
+            }
+            .regex-helper-result.show {
+                display: block;
+            }
+            .regex-helper-code {
+                font-family:
+                    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                    "Liberation Mono", monospace;
+            }
+            .regex-helper-summary {
+                margin-top: 12px;
+                padding: 11px 13px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--bg3);
+                color: var(--muted);
+                font-size: 12px;
+                line-height: 1.55;
+                white-space: pre-wrap;
+            }
+            .regex-helper-examples {
+                margin-top: 10px;
+                display: grid;
+                gap: 6px;
+                font-size: 12px;
+            }
+            .regex-helper-example {
+                display: flex;
+                gap: 8px;
+                align-items: baseline;
+                color: var(--muted);
+            }
+            .regex-helper-example.ok span:first-child {
+                color: var(--success);
+            }
+            .regex-helper-example.bad span:first-child {
+                color: var(--danger);
+            }
 
             @media (max-width: 700px) {
                 .modal-overlay {
@@ -1344,6 +1413,9 @@
                 }
                 .pattern-editor-textarea {
                     min-height: 40vh;
+                }
+                .regex-helper-grid {
+                    grid-template-columns: 1fr;
                 }
             }
 
@@ -2455,6 +2527,80 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="regex-helper-modal">
+            <div class="modal pattern-editor">
+                <div class="modal-title">
+                    <span>✨ AI Regex Helper</span>
+                    <button class="modal-close" onclick="closeRegexHelper()">
+                        ✕
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="regex-helper-grid">
+                        <div class="form-group">
+                            <label class="field-label" for="regex-helper-operation">Task</label>
+                            <select id="regex-helper-operation">
+                                <option value="generate">Generate</option>
+                                <option value="improve">Improve / simplify</option>
+                                <option value="fix">Fix invalid regex</option>
+                                <option value="explain">Explain</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label" for="regex-helper-current">Current regex</label>
+                            <input id="regex-helper-current" class="regex-helper-code" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px">
+                        <label class="field-label" for="regex-helper-instruction">What should it match?</label>
+                        <textarea
+                            id="regex-helper-instruction"
+                            class="settings-textarea"
+                            maxlength="2000"
+                            placeholder="Example: Match Stripe invoice subjects containing a four-digit year, but not payment reminders."
+                        ></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label" for="regex-helper-sample">Optional sample text</label>
+                        <textarea
+                            id="regex-helper-sample"
+                            class="settings-textarea"
+                            maxlength="4000"
+                            placeholder="Paste your own synthetic examples here. Mailbox content is never loaded automatically."
+                        ></textarea>
+                        <div class="settings-help">
+                            Uses your saved primary OpenRouter model. Only the text entered in this dialog and the current regex are sent.
+                        </div>
+                    </div>
+
+                    <div class="regex-helper-result" id="regex-helper-result">
+                        <div class="regex-helper-grid">
+                            <div class="form-group">
+                                <label class="field-label" for="regex-helper-flags">Suggested flags</label>
+                                <select id="regex-helper-flags">
+                                    <option value="i">case insensitive</option>
+                                    <option value="">case sensitive</option>
+                                    <option value="im">multiline + insensitive</option>
+                                    <option value="m">multiline + sensitive</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label" for="regex-helper-pattern">Suggested regex</label>
+                                <input id="regex-helper-pattern" class="regex-helper-code" spellcheck="false">
+                            </div>
+                        </div>
+                        <div class="regex-helper-summary" id="regex-helper-summary"></div>
+                        <div class="regex-helper-examples" id="regex-helper-examples"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" onclick="closeRegexHelper()">Cancel</button>
+                    <button class="btn btn-ghost" id="regex-helper-generate" onclick="runRegexHelper()">Generate suggestion</button>
+                    <button class="btn btn-primary" id="regex-helper-apply" onclick="applyRegexHelper()" disabled>Apply Regex</button>
+                </div>
+            </div>
+        </div>
+
         <div class="toast" id="toast"></div>
 
         <script>
@@ -2464,6 +2610,10 @@
             var logicState = { r: "AND", e: "AND" };
             var draggedRuleId = null;
             var activePatternInput = null;
+            var activeRegexInput = null;
+            var activeRegexWarnId = "";
+            var regexHelperResult = null;
+            var regexHelperRequestId = 0;
             var currentAiSettings = {};
 
             // ---- mobile ----
@@ -2518,15 +2668,20 @@
                     flags.innerHTML = getFlagOptionsHTML(mode, selected);
                     if (!regexOn && flags.value === "im") flags.value = "i";
                 }
+                var aiButton = row.querySelector(".regex-ai-btn");
+                if (aiButton) aiButton.classList.toggle("show", regexOn);
             }
 
             function getFlagOptionsHTML(mode, selected) {
+                var selectedValue =
+                    typeof selected === "string" ? selected : "i";
                 var options =
                     mode === "regex"
                         ? [
                               { v: "i", l: "case insensitive" },
                               { v: "", l: "case sensitive" },
                               { v: "im", l: "multiline" },
+                              { v: "m", l: "multiline + case sensitive" },
                           ]
                         : [
                               { v: "i", l: "case insensitive" },
@@ -2538,7 +2693,7 @@
                             '<option value="' +
                             o.v +
                             '"' +
-                            ((selected || "i") === o.v ? " selected" : "") +
+                            (selectedValue === o.v ? " selected" : "") +
                             ">" +
                             o.l +
                             "</option>"
@@ -2676,6 +2831,9 @@
                     '<button class="pattern-expand-btn" type="button" title="Open larger pattern editor" onclick="openPatternModal(this,\'' +
                     warnId +
                     "')\">⤢</button>" +
+                    '<button class="regex-ai-btn" type="button" title="Generate or improve this regex with AI" onclick="openRegexHelper(this,\'' +
+                    warnId +
+                    "')\">✨</button>" +
                     "</div>" +
                     '<div class="condition-options">' +
                     "<select class=\"cond-mode\" onchange=\"checkPatternHint(this.closest('.condition-row').querySelector('.cond-pattern'),'" +
@@ -2801,6 +2959,165 @@
                 var warnId = modal.dataset.warnId || "";
                 if (warnId) checkPatternHint(activePatternInput, warnId);
                 closePatternModal();
+            }
+
+            function openRegexHelper(btn, warnId) {
+                var row = btn.closest(".condition-row");
+                if (!row) return;
+                var input = row.querySelector(".cond-pattern");
+                var mode = row.querySelector(".cond-mode");
+                if (!input || !mode || mode.value !== "regex") return;
+
+                activeRegexInput = input;
+                activeRegexWarnId = warnId || "";
+                regexHelperResult = null;
+                regexHelperRequestId++;
+                var modal = document.getElementById("regex-helper-modal");
+                modal.dataset.field = row.querySelector(".cond-field").value;
+                document.getElementById("regex-helper-operation").value =
+                    input.value ? "improve" : "generate";
+                document.getElementById("regex-helper-current").value =
+                    input.value || "(none yet)";
+                document.getElementById("regex-helper-instruction").value = "";
+                document.getElementById("regex-helper-sample").value = "";
+                document.getElementById("regex-helper-pattern").value = "";
+                document.getElementById("regex-helper-result").classList.remove("show");
+                document.getElementById("regex-helper-apply").disabled = true;
+                modal.classList.add("open");
+                setTimeout(function () {
+                    document.getElementById("regex-helper-instruction").focus();
+                }, 0);
+            }
+
+            function closeRegexHelper() {
+                regexHelperRequestId++;
+                document
+                    .getElementById("regex-helper-modal")
+                    .classList.remove("open");
+                activeRegexInput = null;
+                activeRegexWarnId = "";
+                regexHelperResult = null;
+            }
+
+            function runRegexHelper() {
+                if (!activeRegexInput) return;
+                var row = activeRegexInput.closest(".condition-row");
+                if (!row) return;
+                var instruction = document
+                    .getElementById("regex-helper-instruction")
+                    .value.trim();
+                var currentPattern = activeRegexInput.value || "";
+                if (!instruction && !currentPattern) {
+                    toast("Describe what the regex should match", "error");
+                    return;
+                }
+
+                var button = document.getElementById("regex-helper-generate");
+                var applyButton = document.getElementById("regex-helper-apply");
+                button.disabled = true;
+                button.textContent = "Thinking…";
+                applyButton.disabled = true;
+                document.getElementById("regex-helper-result").classList.remove("show");
+                var requestId = ++regexHelperRequestId;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (requestId !== regexHelperRequestId) return;
+                        button.disabled = false;
+                        button.textContent = "Generate suggestion";
+                        showRegexHelperResult(result);
+                    })
+                    .withFailureHandler(function (e) {
+                        if (requestId !== regexHelperRequestId) return;
+                        button.disabled = false;
+                        button.textContent = "Generate suggestion";
+                        toast("Regex helper failed: " + e.message, "error");
+                    })
+                    .generateRegexWithAi({
+                        operation: document.getElementById(
+                            "regex-helper-operation",
+                        ).value,
+                        field: document.getElementById("regex-helper-modal")
+                            .dataset.field,
+                        instruction: instruction,
+                        currentPattern: currentPattern,
+                        currentFlags: row.querySelector(".cond-flags").value,
+                        sampleText: document.getElementById("regex-helper-sample")
+                            .value,
+                    });
+            }
+
+            function showRegexHelperResult(result) {
+                regexHelperResult = result;
+                document.getElementById("regex-helper-pattern").value =
+                    result.pattern || "";
+                document.getElementById("regex-helper-flags").value =
+                    typeof result.flags === "string" ? result.flags : "i";
+                var summary = result.explanation || "";
+                if (result.warnings && result.warnings.length) {
+                    summary +=
+                        (summary ? "\n\n" : "") +
+                        "Warnings:\n• " +
+                        result.warnings.join("\n• ");
+                }
+                document.getElementById("regex-helper-summary").textContent =
+                    summary || "Suggestion generated.";
+
+                var examples = [];
+                (result.positiveExamples || []).forEach(function (example) {
+                    var tested = example.matched !== null;
+                    var passed = example.matched === true;
+                    examples.push(
+                        '<div class="regex-helper-example ' +
+                            (passed ? "ok" : "bad") +
+                            '"><span>' +
+                            (passed ? "✓" : tested ? "⚠" : "?") +
+                            '</span><span>Should match' +
+                            (tested ? "" : " (not auto-tested for safety)") +
+                            ': <code>' +
+                            esc(example.text) +
+                            "</code></span></div>",
+                    );
+                });
+                (result.negativeExamples || []).forEach(function (example) {
+                    var tested = example.matched !== null;
+                    var passed = example.matched === false;
+                    examples.push(
+                        '<div class="regex-helper-example ' +
+                            (passed ? "ok" : "bad") +
+                            '"><span>' +
+                            (passed ? "✓" : tested ? "⚠" : "?") +
+                            '</span><span>Should not match' +
+                            (tested ? "" : " (not auto-tested for safety)") +
+                            ': <code>' +
+                            esc(example.text) +
+                            "</code></span></div>",
+                    );
+                });
+                document.getElementById("regex-helper-examples").innerHTML =
+                    examples.join("");
+                document.getElementById("regex-helper-result").classList.add("show");
+                document.getElementById("regex-helper-apply").disabled = false;
+            }
+
+            function applyRegexHelper() {
+                if (!activeRegexInput || !regexHelperResult) return;
+                var pattern = document.getElementById("regex-helper-pattern").value;
+                var flags = document.getElementById("regex-helper-flags").value;
+                try {
+                    new RegExp(pattern, flags);
+                } catch (e) {
+                    toast("Invalid regex: " + e.message, "error");
+                    return;
+                }
+                var row = activeRegexInput.closest(".condition-row");
+                row.querySelector(".cond-mode").value = "regex";
+                syncConditionModeUI(row);
+                row.querySelector(".cond-flags").value = flags;
+                activeRegexInput.value = pattern;
+                if (activeRegexWarnId)
+                    checkPatternHint(activeRegexInput, activeRegexWarnId);
+                closeRegexHelper();
+                toast("Regex applied. Save the rule when ready.", "success");
             }
 
             function removeConditionRow(btn, prefix) {
