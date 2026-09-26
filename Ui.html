@@ -2680,7 +2680,7 @@
                     if (!regexOn && flags.value === "im") flags.value = "i";
                 }
                 var aiButton = row.querySelector(".regex-ai-btn");
-                if (aiButton) aiButton.classList.toggle("show", regexOn);
+                if (aiButton) aiButton.classList.add("show");
             }
 
             function getFlagOptionsHTML(mode, selected) {
@@ -2842,7 +2842,7 @@
                     '<button class="pattern-expand-btn" type="button" title="Open larger pattern editor" onclick="openPatternModal(this,\'' +
                     warnId +
                     "')\">⤢</button>" +
-                    '<button class="regex-ai-btn" type="button" title="Generate or improve this regex with AI" onclick="openRegexHelper(this,\'' +
+                    '<button class="regex-ai-btn show" type="button" title="Create or improve a regex with AI" onclick="openRegexHelper(this,\'' +
                     warnId +
                     "')\">✨</button>" +
                     "</div>" +
@@ -2977,7 +2977,7 @@
                 if (!row) return;
                 var input = row.querySelector(".cond-pattern");
                 var mode = row.querySelector(".cond-mode");
-                if (!input || !mode || mode.value !== "regex") return;
+                if (!input || !mode) return;
 
                 activeRegexInput = input;
                 activeRegexWarnId = warnId || "";
@@ -2985,10 +2985,17 @@
                 regexHelperRequestId++;
                 var modal = document.getElementById("regex-helper-modal");
                 modal.dataset.field = row.querySelector(".cond-field").value;
+                modal.dataset.wasRegex = mode.value === "regex" ? "true" : "false";
                 document.getElementById("regex-helper-operation").value =
-                    input.value ? "improve" : "generate";
+                    mode.value === "regex" && input.value
+                        ? "improve"
+                        : "generate";
                 document.getElementById("regex-helper-current").value =
-                    input.value || "(none yet)";
+                    mode.value === "regex"
+                        ? input.value || "(none yet)"
+                        : "(condition is currently " +
+                          modeLabel(mode.value) +
+                          ")";
                 document.getElementById("regex-helper-instruction").value = "";
                 document.getElementById("regex-helper-sample").value = "";
                 document.getElementById("regex-helper-pattern").value = "";
@@ -3017,7 +3024,11 @@
                 var instruction = document
                     .getElementById("regex-helper-instruction")
                     .value.trim();
-                var currentPattern = activeRegexInput.value || "";
+                var helperModal = document.getElementById("regex-helper-modal");
+                var currentPattern =
+                    helperModal.dataset.wasRegex === "true"
+                        ? activeRegexInput.value || ""
+                        : "";
                 if (!instruction && !currentPattern) {
                     toast("Describe what the regex should match", "error");
                     return;
@@ -3047,8 +3058,7 @@
                         operation: document.getElementById(
                             "regex-helper-operation",
                         ).value,
-                        field: document.getElementById("regex-helper-modal")
-                            .dataset.field,
+                        field: helperModal.dataset.field,
                         instruction: instruction,
                         currentPattern: currentPattern,
                         currentFlags: row.querySelector(".cond-flags").value,
