@@ -37,6 +37,8 @@ For **Both**, each model must independently reach the rule threshold. For **Eith
 
 Start with global dry-run enabled and use **Test Rule** before enabling live actions. AI output only supplies match scores, confidence, and explanations; the configured rule controls the Gmail action. **Both models must match** is recommended for permanent deletion. Permanent deletion is irreversible, and correlated model errors can still remove legitimate mail; the UI requires explicit confirmation when saving that combination.
 
+AI responses are requested with a strict JSON schema and OpenRouter response healing. If a provider still returns truncated or malformed JSON, the app retries smaller batches and then retries a single message once. A message that still has no valid verdict fails closed: no Gmail action is taken, the error is logged, and that message is not cached so a later run can try it again. Temporary OpenRouter errors such as rate limits, timeouts, and server failures are retried once as well.
+
 The OpenRouter key is stored in Apps Script User Properties and is not returned to the browser after saving. Email sender, recipient, subject, date, and a limited text body are sent to the selected model—or both models for verified rules; attachments are not sent. Selecting Sent or Everywhere can send your own outgoing message text to the provider. Deploy the web app with access restricted to your own account.
 
 ## How It Works
