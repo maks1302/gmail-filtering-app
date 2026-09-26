@@ -1874,7 +1874,7 @@
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-title">🤖 AI Rule Settings</div>
+                        <div class="card-title">🤖 AI Settings</div>
                         <div class="form-grid">
                             <div class="form-group form-full">
                                 <label class="settings-check">
@@ -1917,6 +1917,17 @@
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label class="field-label">Regex Helper Model</label>
+                                <input
+                                    type="text"
+                                    id="ai-regex-helper-model"
+                                    placeholder="Blank = primary model"
+                                />
+                                <div class="settings-help">
+                                    Optional; blank uses the primary model. It must support structured outputs.
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label class="field-label">AI evaluations per run</label>
                                 <input type="number" id="ai-max-per-run" min="1" max="50" />
                             </div>
@@ -1926,7 +1937,7 @@
                             </div>
                         </div>
                         <div class="settings-help" style="margin-bottom: 14px">
-                            Create AI rules on the Rules page. Two-model rules consume two evaluations per message. Sender, recipient, subject, date, and a limited text body are sent to both configured models; attachments are never sent.
+                            Create AI rules on the Rules page. Two-model rules consume two evaluations per message. Sender, recipient, subject, date, and a limited text body are sent to the AI-rule models; attachments are never sent. The regex helper never reads mailbox content.
                         </div>
                         <div class="action-strip">
                             <button class="btn btn-primary" id="ai-save-btn" onclick="saveAiSettings()">
@@ -2569,7 +2580,7 @@
                             placeholder="Paste your own synthetic examples here. Mailbox content is never loaded automatically."
                         ></textarea>
                         <div class="settings-help">
-                            Uses your saved primary OpenRouter model. Only the text entered in this dialog and the current regex are sent.
+                            Uses the configured Regex Helper Model, or the primary model when that setting is blank. Only the text entered in this dialog and the current regex are sent.
                         </div>
                     </div>
 
@@ -4238,6 +4249,8 @@
                             ai.model || "openai/gpt-4o-mini";
                         document.getElementById("ai-verifier-model").value =
                             ai.verifierModel || "";
+                        document.getElementById("ai-regex-helper-model").value =
+                            ai.regexHelperModel || "";
                         document.getElementById("ai-max-per-run").value =
                             ai.maxPerRun;
                         document.getElementById("ai-max-body").value =
@@ -4261,6 +4274,9 @@
                     model: document.getElementById("ai-model").value.trim(),
                     verifierModel: document
                         .getElementById("ai-verifier-model")
+                        .value.trim(),
+                    regexHelperModel: document
+                        .getElementById("ai-regex-helper-model")
                         .value.trim(),
                     maxPerRun: parseInt(
                         document.getElementById("ai-max-per-run").value,

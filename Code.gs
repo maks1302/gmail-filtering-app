@@ -129,7 +129,7 @@ function generateRegexWithAi(input) {
   if (!apiKey) throw new Error("Save an OpenRouter API key in Settings first");
 
   var payload = {
-    model: ai.model,
+    model: ai.regexHelperModel || ai.model,
     temperature: 0,
     max_tokens: 1200,
     provider: { require_parameters: true },
@@ -320,6 +320,7 @@ function normalizeAiSettings(input) {
     dryRun: input.dryRun !== false,
     model: String(input.model || "openai/gpt-4o-mini").trim(),
     verifierModel: String(input.verifierModel || "").trim(),
+    regexHelperModel: String(input.regexHelperModel || "").trim(),
     maxPerRun: isFinite(maxPerRun) ? maxPerRun : 20,
     maxBodyChars: isFinite(maxBodyChars) ? maxBodyChars : 6000,
   };
