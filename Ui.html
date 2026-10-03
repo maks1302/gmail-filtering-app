@@ -1452,6 +1452,24 @@
                 background: var(--border2);
                 border-radius: 3px;
             }
+            .run-overview {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            .run-overview .card-title { margin-bottom: 8px; }
+            .run-overview .btn { flex-shrink: 0; }
+            #run-summary { overflow-wrap: anywhere; }
+            @media (max-width: 700px) {
+                .form-grid { grid-template-columns: minmax(0, 1fr); }
+                .form-full { grid-column: 1; }
+                .form-group { min-width: 0; }
+                .condition-main { flex-wrap: wrap; }
+                .condition-pattern-wrap { min-width: 100%; }
+                .condition-pattern-wrap input { min-width: 0; }
+                .run-overview { align-items: stretch; flex-direction: column; }
+            }
         </style>
     </head>
     <body>
@@ -1541,6 +1559,16 @@
                             <div class="stat-label">Recent Actions</div>
                             <div class="stat-value" id="stat-log">—</div>
                         </div>
+                    </div>
+
+                    <div class="card run-overview">
+                        <div>
+                            <div class="card-title">Saved rule automation</div>
+                            <p id="run-summary" role="status">Loading run status…</p>
+                            <p id="run-last-success" class="section-note"></p>
+                            <p class="section-note">Runs enabled saved rules on mail from the last 24 hours.</p>
+                        </div>
+                        <button class="btn btn-ghost" onclick="runNow()" id="run-btn">▶ Run Saved Rules</button>
                     </div>
 
                     <div class="card">
@@ -1741,13 +1769,6 @@
                                 onclick="testCurrentRule('r', 'r-test-result')"
                             >
                                 🔍 Test
-                            </button>
-                            <button
-                                class="btn btn-ghost"
-                                onclick="runNow()"
-                                id="run-btn"
-                            >
-                                ▶ Run Now
                             </button>
                             <button class="btn btn-primary" onclick="addRule()">
                                 ＋ Add Rule
@@ -3290,6 +3311,24 @@
                         : "none";
             }
 
+            function renderRunStatus(report) {
+                var summary = document.getElementById("run-summary");
+                var success = document.getElementById("run-last-success");
+                if (!report) {
+                    summary.textContent = "No runs recorded yet.";
+                    success.textContent = "";
+                    return;
+                }
+                var labels = { running: "Started (completion not yet recorded)", completed: "Completed", completed_with_errors: "Completed with errors", failed: "Failed" };
+                summary.textContent = (labels[report.status] || report.status) + " · " +
+                    new Date(report.finishedAt || report.startedAt).toLocaleString() + " · " +
+                    report.scanned + " messages scanned · " + report.actions + " actions · " + report.errors + " errors" +
+                    (report.message ? " — " + report.message : "");
+                success.textContent = report.lastSuccessfulRunAt
+                    ? "Last successful run: " + new Date(report.lastSuccessfulRunAt).toLocaleString()
+                    : "No successful run recorded yet.";
+            }
+
             // ---- stats ----
             function loadStats() {
                 google.script.run
@@ -3300,6 +3339,7 @@
                             s.activeRules;
                         document.getElementById("stat-log").textContent =
                             s.recentActions;
+                        renderRunStatus(s.lastRun);
                         currentInterval = s.intervalMinutes || 1;
                         var badge = document.getElementById("trigger-badge");
                         badge.className =
@@ -3322,6 +3362,10 @@
                                     ? s.triggerLabel + " — active"
                                     : "not active");
                     })
+                    .withFailureHandler(function (e) {
+                        document.getElementById("run-summary").textContent = "Could not load status: " + e.message;
+                        document.getElementById("trigger-text").textContent = "Status unavailable";
+                    })
                     .getStats();
             }
 
@@ -3331,6 +3375,9 @@
                     .withSuccessHandler(function (data) {
                         rules = data;
                         renderRules();
+                    })
+                    .withFailureHandler(function (e) {
+                        toast("Could not load rules: " + e.message, "error");
                     })
                     .getRules();
             }
@@ -4186,10 +4233,12 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spin"></span> Running…';
                 google.script.run
-                    .withSuccessHandler(function (msg) {
+                    .withSuccessHandler(function (report) {
                         btn.disabled = false;
-                        btn.innerHTML = "▶ Run Now";
-                        toast(msg, "success");
+                        btn.textContent = "▶ Run Saved Rules";
+                        toast(report.status === "skipped" ? report.message :
+                            "Run finished: " + report.actions + " actions, " + report.errors + " errors.",
+                            report.status === "skipped" || report.errors ? "warn" : "success");
                         loadStats();
                         if (
                             document
@@ -4200,8 +4249,9 @@
                     })
                     .withFailureHandler(function (e) {
                         btn.disabled = false;
-                        btn.innerHTML = "▶ Run Now";
+                        btn.textContent = "▶ Run Saved Rules";
                         toast("Error: " + e.message, "error");
+                        loadStats();
                     })
                     .runFiltersNow();
             }

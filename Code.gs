@@ -1,12 +1,7 @@
 // ============================================================
 //  Gmail Filter App — Code.gs  (v6)
-//  Critical fixes:
-//   - Added debugRule() to diagnose exactly why emails match
-//   - Log entries slimmed down to stay under 9KB PropertiesService limit
-//   - Body snippet reduced to 150 chars
-//   - Thread-level deduplication: once a thread is actioned by a rule, skip it
-//   - condResults stored only for matched conditions to save space
-//   - Clearer error messages
+//  Message-level scope checks and deduplication.
+//  Pattern rules run in displayed order before AI rules.
 // ============================================================
 
 var RULES_KEY = "gmail_filter_rules";
@@ -26,7 +21,8 @@ var SEARCH_PAGE_SIZE = 100;
 var MAX_PROCESSED = 2000;
 var MAX_LOG = 25; // prefer fewer, richer entries so rule/body details survive
 var AI_BATCH_SIZE = 5;
-var AI_CACHE_MAX = 250;
+var AI_CACHE_MAX = 5000;
+var RUN_STATUS_KEY = "gmail_filter_run_status";
 var OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // ------------------------------------------------------------
@@ -344,7 +340,7 @@ function updateInterval(minutes) {
   var s = getSettings();
   s.intervalMinutes = minutes;
   saveSettings(s);
-  createTrigger(minutes);
+  if (getTriggerStatus().active) createTrigger(minutes);
   return "Timer updated to every " + minutes + " minute(s).";
 }
 
@@ -546,6 +542,24 @@ function buildScopeQuery(scope) {
 //  Evaluate conditions for a single message
 //  Returns { passed: bool, condResults: [{field, pattern, matched, actualValue}] }
 // ------------------------------------------------------------
+// Gmail searches return conversations; scope must be checked on each message.
+function messageMatchesScope_(msg, scope, labelCache) {
+  scope = normalizeScope(scope);
+  if (scope.indexOf("anywhere") !== -1) return true;
+  var id = msg.getId();
+  if (!Object.prototype.hasOwnProperty.call(labelCache, id)) {
+    var metadata = Gmail.Users.Messages.get("me", id, {
+      format: "minimal",
+      fields: "labelIds",
+    });
+    labelCache[id] = metadata.labelIds || [];
+  }
+  var labels = labelCache[id];
+  return scope.some(function (item) {
+    return labels.indexOf(item.toUpperCase()) !== -1;
+  });
+}
+
 function evaluateConditions(msg, rule, options) {
   options = options || {};
   var condResults = [];
@@ -557,7 +571,7 @@ function evaluateConditions(msg, rule, options) {
     condResults.push({
       field: cond.field,
       pattern: cond.pattern,
-      flags: cond.flags || "i",
+      flags: typeof cond.flags === "string" ? cond.flags : "i",
       mode: cond.mode || "contains",
       matched: result.matched,
       actualValue:
@@ -637,10 +651,11 @@ function debugRule(ruleId) {
     var scopeQuery = buildScopeQuery(rule.scope);
     var threads = GmailApp.search(scopeQuery, 0, 20);
     var results = [];
+    var labelCache = {};
 
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
-        if (results.length >= 20) return;
+        if (results.length >= 20 || !messageMatchesScope_(msg, rule.scope, labelCache)) return;
         var eval_ = evaluateConditions(msg, rule);
         results.push({
           from: msg.getFrom(),
@@ -667,10 +682,11 @@ function testRule(conditions, logic, scope) {
     var scopeQuery = buildScopeQuery(scope && scope.length ? scope : ["inbox"]);
     var threads = GmailApp.search(scopeQuery, 0, 30);
     var matches = [];
+    var labelCache = {};
 
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
-        if (matches.length >= 30) return;
+        if (matches.length >= 30 || !messageMatchesScope_(msg, scope, labelCache)) return;
         var eval_ = evaluateConditions(msg, rule, {
           shortCircuit: true,
           includeActual: false,
@@ -699,25 +715,55 @@ function testRule(conditions, logic, scope) {
 function runFilters() {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) {
-    _flushLogs([
-      {
-        ts: new Date().toISOString(),
-        action: "WARN",
-        subject: "Skipped run because another filter run is still active.",
-        conditions: [],
-      },
-    ]);
-    return;
+    return { status: "skipped", message: "Another filter run is still active." };
   }
-
+  var report = {
+    status: "running",
+    startedAt: new Date().toISOString(),
+    scanned: 0,
+    actions: 0,
+    errors: 0,
+    seen: {},
+  };
   try {
-    runFiltersLocked_();
+    saveRunReport_(report);
+    runFiltersLocked_(report);
+    report.status = report.errors ? "completed_with_errors" : "completed";
+  } catch (e) {
+    report.status = "failed";
+    report.errors++;
+    report.message = String(e.message || e).substring(0, 500);
+    throw e;
   } finally {
-    lock.releaseLock();
+    report.finishedAt = new Date().toISOString();
+    try {
+      saveRunReport_(report);
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  delete report.seen;
+  return report;
+}
+
+function saveRunReport_(report) {
+  var properties = PropertiesService.getUserProperties();
+  var previous = JSON.parse(properties.getProperty(RUN_STATUS_KEY) || "{}");
+  var stored = Object.assign({}, report);
+  delete stored.seen;
+  stored.lastSuccessfulRunAt = report.status === "completed"
+    ? report.finishedAt : previous.lastSuccessfulRunAt || null;
+  properties.setProperty(RUN_STATUS_KEY, JSON.stringify(stored));
+}
+
+function countScanned_(report, id) {
+  if (report && !report.seen[id]) {
+    report.seen[id] = true;
+    report.scanned++;
   }
 }
 
-function runFiltersLocked_() {
+function runFiltersLocked_(report) {
   var logsToWrite = [];
   var settings = getSettings();
   var aiSettings = normalizeAiSettings(settings.ai || {});
@@ -742,6 +788,7 @@ function runFiltersLocked_() {
       }
     });
   if (!rules.length) {
+    if (report) report.errors += logsToWrite.length;
     _flushLogs(logsToWrite);
     return;
   }
@@ -756,97 +803,96 @@ function runFiltersLocked_() {
   var searchAfter = new Date(oldestAllowed.getTime() - 24 * 60 * 60 * 1000);
   var dateQuery = formatGmailSearchDate(searchAfter);
 
-  // group rules by scope query
+  // Cache searches, but evaluate rules in their displayed order.
   var queryMap = {};
-  rules.forEach(function (rule) {
-    if (rule.type === "ai") return;
-    var q = buildScopeQuery(rule.scope);
-    if (!queryMap[q]) queryMap[q] = [];
-    queryMap[q].push(rule);
-  });
-
+  var labelCache = {};
   var hitMap = {};
   var processed = getProcessedMap();
   var processedChanged = false;
   var actionedMessageIds = {};
-  Object.keys(queryMap).forEach(function (scopeQuery) {
-    var scopeRules = queryMap[scopeQuery];
-    var threads = searchThreads(scopeQuery + " after:" + dateQuery);
-
-    threads.forEach(function (thread) {
-      thread.getMessages().forEach(function (msg) {
-        if (msg.getDate() < since) return;
-        var actionTaken = false;
-
-        scopeRules.forEach(function (rule) {
-          if (actionTaken) return;
-
-          try {
-            var processedKey = makeProcessedKey(rule, msg.getId());
-            if (processed[processedKey]) return;
-
-            var eval_ = evaluateConditions(msg, rule, {
-              shortCircuit: true,
-              includeActual: false,
-            });
-            if (!eval_.passed) return;
-
-            eval_ = evaluateConditions(msg, rule);
-
-            var fromValue = msg.getFrom();
-            var subjectValue = msg.getSubject();
-            var bodySnippet = "";
-            try {
-              bodySnippet = makeSnippet(getMessageBodyForMatching(msg), 200);
-            } catch (e) {}
-
-            applyAction(msg, rule);
-            actionTaken = true;
-            actionedMessageIds[msg.getId()] = true;
-            processed[processedKey] = new Date().toISOString();
-            processedChanged = true;
-
-            hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
-
-            logsToWrite.push({
-              ts: new Date().toISOString(),
-              ruleId: rule.id,
-              ruleName: rule.name || "Unnamed rule",
-              action: rule.action,
-              logic: rule.logic,
-              messageId: msg.getId(),
-              threadId: thread.getId(),
-              from: fromValue,
-              subject: subjectValue,
-              body: bodySnippet,
-              conditions: eval_.condResults.map(function (c) {
-                return {
-                  field: c.field,
-                  pattern: c.pattern,
-                  flags: c.flags,
-                  mode: c.mode,
-                  matched: c.matched,
-                  actualValue: c.actualValue,
-                };
-              }),
-            });
-          } catch (e) {
-            logsToWrite.push({
-              ts: new Date().toISOString(),
-              ruleId: rule.id,
-              ruleName: rule.name || "Unnamed rule",
-              action: "ERROR",
-              logic: rule.logic,
-              messageId: msg.getId(),
-              threadId: thread.getId(),
-              from: msg.getFrom(),
-              subject: e.message,
-              body: "",
-              conditions: [],
-            });
-          }
+  rules.filter(function (rule) { return rule.type !== "ai"; }).forEach(function (rule) {
+    var scopeQuery = buildScopeQuery(rule.scope);
+    if (!queryMap[scopeQuery]) {
+      queryMap[scopeQuery] = [];
+      searchThreads(scopeQuery + " after:" + dateQuery).forEach(function (thread) {
+        var threadId = thread.getId();
+        thread.getMessages().forEach(function (msg) {
+          queryMap[scopeQuery].push({ message: msg, threadId: threadId });
         });
       });
+    }
+    queryMap[scopeQuery].forEach(function (entry) {
+      var msg = entry.message;
+      if (actionedMessageIds[msg.getId()] || msg.getDate() < since) return;
+      try {
+        if (!messageMatchesScope_(msg, rule.scope, labelCache)) return;
+        countScanned_(report, msg.getId());
+        var processedKey = makeProcessedKey(rule, msg.getId());
+        if (processed[processedKey]) {
+          actionedMessageIds[msg.getId()] = true;
+          return;
+        }
+
+        var eval_ = evaluateConditions(msg, rule, {
+          shortCircuit: true,
+          includeActual: false,
+        });
+        if (!eval_.passed) return;
+
+        eval_ = evaluateConditions(msg, rule);
+
+        var fromValue = msg.getFrom();
+        var subjectValue = msg.getSubject();
+        var bodySnippet = "";
+        try {
+          bodySnippet = makeSnippet(getMessageBodyForMatching(msg), 200);
+        } catch (e) {}
+
+        applyAction(msg, rule);
+        if (report) report.actions++;
+        actionedMessageIds[msg.getId()] = true;
+        processed[processedKey] = new Date().toISOString();
+        processedChanged = true;
+
+        hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
+
+        logsToWrite.push({
+          ts: new Date().toISOString(),
+          ruleId: rule.id,
+          ruleName: rule.name || "Unnamed rule",
+          action: rule.action,
+          logic: rule.logic,
+          messageId: msg.getId(),
+          threadId: entry.threadId,
+          from: fromValue,
+          subject: subjectValue,
+          body: bodySnippet,
+          conditions: eval_.condResults.map(function (c) {
+            return {
+              field: c.field,
+              pattern: c.pattern,
+              flags: c.flags,
+              mode: c.mode,
+              matched: c.matched,
+              actualValue: c.actualValue,
+            };
+          }),
+        });
+      } catch (e) {
+        logsToWrite.push({
+          ts: new Date().toISOString(),
+          ruleId: rule.id,
+          ruleName: rule.name || "Unnamed rule",
+          action: "ERROR",
+          logic: rule.logic,
+          messageId: msg.getId(),
+          threadId: entry.threadId,
+          from: msg.getFrom(),
+          subject: e.message,
+          body: "",
+          conditions: [],
+        });
+      }
     });
   });
 
@@ -857,7 +903,7 @@ function runFiltersLocked_() {
   if (aiRules.length) {
     try {
       logsToWrite = logsToWrite.concat(
-        runAiRules_(aiRules, aiSettings, since, actionedMessageIds, hitMap),
+        runAiRules_(aiRules, aiSettings, since, actionedMessageIds, hitMap, report),
       );
     } catch (e) {
       logsToWrite.push({
@@ -879,7 +925,9 @@ function runFiltersLocked_() {
       }),
     );
   }
+  if (report) report.errors += logsToWrite.filter(function (entry) { return entry.action === "ERROR"; }).length;
   _flushLogs(logsToWrite);
+  settings = getSettings();
   settings.lastRunAt = now.toISOString();
   saveSettings(settings);
 }
@@ -887,7 +935,7 @@ function runFiltersLocked_() {
 // ------------------------------------------------------------
 //  AI filtering (OpenRouter)
 // ------------------------------------------------------------
-function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
+function runAiRules_(rules, ai, since, actionedMessageIds, hitMap, report) {
   validateAiSettings(ai);
   var apiKey = PropertiesService.getUserProperties().getProperty(
     AI_API_KEY_KEY,
@@ -924,6 +972,7 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
       cache,
       version,
       candidateLimit,
+      report,
     );
     remaining -= candidates.length * evaluationsPerMessage;
 
@@ -1001,6 +1050,7 @@ function runAiRules_(rules, ai, since, actionedMessageIds, hitMap) {
         try {
           if (matched && !ai.dryRun) {
             applyAction(candidate.message, rule);
+            if (report) report.actions++;
             actionedMessageIds[candidate.id] = true;
             hitMap[rule.id] = (hitMap[rule.id] || 0) + 1;
           }
@@ -1171,34 +1221,41 @@ function getAiRuleCandidates_(
   cache,
   version,
   limit,
+  report,
 ) {
   var searchAfter = new Date(since.getTime() - 86400000);
   var query =
     buildScopeQuery(rule.scope) +
     " after:" +
     formatGmailSearchDate(searchAfter);
-  var threads = GmailApp.search(query, 0, Math.min(limit * 3, 150));
   var candidates = [];
-
-  threads.forEach(function (thread) {
-    if (candidates.length >= limit) return;
-    thread.getMessages().forEach(function (msg) {
-      if (candidates.length >= limit || msg.getDate() < since) return;
-      var id = msg.getId();
-      if (actionedMessageIds[id]) return;
-      if (cache[shortHash(version + "|" + id)]) return;
-      candidates.push({
-        id: id,
-        threadId: thread.getId(),
-        message: msg,
-        from: msg.getFrom() || "",
-        to: msg.getTo() || "",
-        subject: msg.getSubject() || "",
-        date: msg.getDate().toISOString(),
-        body: prepareAiBody_(getMessageBodyForMatching(msg), ai.maxBodyChars),
+  var labelCache = {};
+  for (var offset = 0; offset < MAX_SCAN_THREADS && candidates.length < limit; offset += SEARCH_PAGE_SIZE) {
+    var pageSize = Math.min(SEARCH_PAGE_SIZE, MAX_SCAN_THREADS - offset);
+    var threads = GmailApp.search(query, offset, pageSize);
+    threads.forEach(function (thread) {
+      if (candidates.length >= limit) return;
+      thread.getMessages().forEach(function (msg) {
+        if (candidates.length >= limit || msg.getDate() < since) return;
+        var id = msg.getId();
+        if (actionedMessageIds[id]) return;
+        if (!messageMatchesScope_(msg, rule.scope, labelCache)) return;
+        countScanned_(report, id);
+        if (cache[shortHash(version + "|" + id)]) return;
+        candidates.push({
+          id: id,
+          threadId: thread.getId(),
+          message: msg,
+          from: msg.getFrom() || "",
+          to: msg.getTo() || "",
+          subject: msg.getSubject() || "",
+          date: msg.getDate().toISOString(),
+          body: prepareAiBody_(getMessageBodyForMatching(msg), ai.maxBodyChars),
+        });
       });
     });
-  });
+    if (threads.length < pageSize) break;
+  }
   return candidates;
 }
 
@@ -1487,40 +1544,39 @@ function prepareAiBody_(body, maxChars) {
 
 
 function getAiCache_() {
-  var raw = PropertiesService.getUserProperties().getProperty(AI_CACHE_KEY);
-  try {
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
+  var properties = PropertiesService.getUserProperties();
+  var cache = JSON.parse(properties.getProperty(AI_CACHE_KEY) || "{}");
+  var count = Number(properties.getProperty(AI_CACHE_KEY + "_count") || 0);
+  for (var i = 0; i < count; i++) {
+    Object.assign(cache, JSON.parse(properties.getProperty(AI_CACHE_KEY + "_" + i) || "{}"));
   }
+  return cache;
 }
 
+// Store only hashes and timestamps; 100 entries fit comfortably per property.
 function saveAiCache_(cache) {
-  var entries = Object.keys(cache).map(function (key) {
-    return { key: key, ts: cache[key] };
-  });
-  entries.sort(function (a, b) {
-    return String(b.ts).localeCompare(String(a.ts));
-  });
-  entries = entries.slice(0, AI_CACHE_MAX);
-  var trimmed = {};
-  entries.forEach(function (entry) {
-    trimmed[entry.key] = entry.ts;
-  });
-  var json = JSON.stringify(trimmed);
-  while (json.length > 8000 && entries.length > 25) {
-    entries.pop();
-    trimmed = {};
-    entries.forEach(function (entry) {
-      trimmed[entry.key] = entry.ts;
-    });
-    json = JSON.stringify(trimmed);
+  var properties = PropertiesService.getUserProperties();
+  var oldCount = Number(properties.getProperty(AI_CACHE_KEY + "_count") || 0);
+  var keys = Object.keys(cache).sort(function (a, b) {
+    return String(cache[b]).localeCompare(String(cache[a]));
+  }).slice(0, AI_CACHE_MAX);
+  var count = Math.ceil(keys.length / 100);
+  for (var i = 0; i < count; i++) {
+    var chunk = {};
+    keys.slice(i * 100, (i + 1) * 100).forEach(function (key) { chunk[key] = cache[key]; });
+    properties.setProperty(AI_CACHE_KEY + "_" + i, JSON.stringify(chunk));
   }
-  PropertiesService.getUserProperties().setProperty(AI_CACHE_KEY, json);
+  properties.setProperty(AI_CACHE_KEY + "_count", String(count));
+  for (var j = count; j < oldCount; j++) properties.deleteProperty(AI_CACHE_KEY + "_" + j);
+  properties.deleteProperty(AI_CACHE_KEY);
 }
 
 function clearAiCache() {
-  PropertiesService.getUserProperties().deleteProperty(AI_CACHE_KEY);
+  var properties = PropertiesService.getUserProperties();
+  var count = Number(properties.getProperty(AI_CACHE_KEY + "_count") || 0);
+  for (var i = 0; i < count; i++) properties.deleteProperty(AI_CACHE_KEY + "_" + i);
+  properties.deleteProperty(AI_CACHE_KEY + "_count");
+  properties.deleteProperty(AI_CACHE_KEY);
   return true;
 }
 
@@ -1813,7 +1869,7 @@ function validateRule(rule) {
     }
     if (cond.mode === "regex") {
       try {
-        new RegExp(cond.pattern, cond.flags || "i");
+        new RegExp(cond.pattern, typeof cond.flags === "string" ? cond.flags : "i");
       } catch (e) {
         throw new Error(label + ": invalid regex - " + e.message);
       }
@@ -1834,7 +1890,7 @@ function escapeRegexLiteral(value) {
 
 function matchCondition(actualValue, cond) {
   var pattern = String(cond.pattern || "");
-  var flags = cond.flags || "i";
+  var flags = typeof cond.flags === "string" ? cond.flags : "i";
   var mode = cond.mode || "contains";
   var actual = String(actualValue || "");
 
@@ -1890,7 +1946,7 @@ function normalizeLogEntry(entry, ruleMap) {
       return {
         field: cond.field || "",
         pattern: cond.pattern || "",
-        flags: cond.flags || "i",
+        flags: typeof cond.flags === "string" ? cond.flags : "i",
         mode: cond.mode || "contains",
         matched: cond.matched === true,
         actualValue: cond.actualValue || "",
@@ -2003,8 +2059,7 @@ function deactivateTrigger() {
 }
 
 function runFiltersNow() {
-  runFilters();
-  return "Done — check the log for results.";
+  return runFilters();
 }
 
 function getStats() {
@@ -2013,6 +2068,7 @@ function getStats() {
   var trigger = getTriggerStatus();
   var s = getSettings();
   return {
+    lastRun: JSON.parse(PropertiesService.getUserProperties().getProperty(RUN_STATUS_KEY) || "null"),
     totalRules: rules.length,
     activeRules: rules.filter(function (r) {
       return r.enabled !== false;

@@ -54,7 +54,13 @@ Each rule can contain one or more conditions, for example:
 
 When a message matches a rule, the selected action is applied to that message.
 
-Pattern rules run top-to-bottom first; AI rules then run top-to-bottom.
+Pattern rules run top-to-bottom first, regardless of scope; AI rules then run top-to-bottom. A message handled by a pattern rule is skipped by later rules during that run. Scope is checked against each message’s labels, including when a conversation contains both Inbox and archived or Sent messages.
+
+**Run Saved Rules** runs enabled saved rules, not the unsaved form. The automation panel shows the last run’s scanned-message count, applied actions, errors, and last successful completion. Scanned messages are counted once across rules; AI evaluations can be fewer because of cached verdicts or the evaluation limit. A run that could not acquire the execution lock is reported as skipped. A run interrupted by the platform may remain marked as started without a recorded completion.
+
+Changing the timer keeps auto-run stopped if it was stopped. Use **Activate** to start it explicitly. Scheduled and manual runs use a 24-hour lookback and a maximum of 1,500 threads per scope; this is not a historical mailbox cleanup.
+
+AI candidate scans page past cached messages until the evaluation budget or scan limit is reached. Up to 5,000 verdict hashes/timestamps are retained across rules in chunked storage; older entries may be evaluated again after eviction. Existing single-property AI caches migrate automatically.
 
 ## Install
 
@@ -191,3 +197,7 @@ Only install it in a Google account you control and trust.
 
 - `Code.gs`: server-side Apps Script logic
 - `Ui.html`: web UI
+
+## Local regression tests
+
+Run `node --test tests/filter.test.cjs` with Node.js 20 or newer. Tests mock Gmail, Apps Script properties, and triggers; they never access a mailbox or call an AI provider. The deployed Apps Script integration still requires a smoke test in your account.
